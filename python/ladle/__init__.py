@@ -45,9 +45,21 @@ _ops = types.ModuleType("ladle.ops")
 sys.modules["ladle.ops"] = _ops
 
 _intervals = types.ModuleType("ladle.ops.intervals")
-_intervals.overlap = _ladle_ops.overlap
-_intervals.nearest = _ladle_ops.nearest
+_intervals.overlap        = _ladle_ops.overlap
+_intervals.nearest        = _ladle_ops.nearest
 _intervals.count_overlaps = _ladle_ops.count_overlaps
+_intervals.cluster        = _ladle_ops.cluster
+_intervals.merge          = _ladle_ops.merge
+_intervals.subtract       = _ladle_ops.subtract
+_intervals.complement     = _ladle_ops.complement
+_intervals.coverage       = _ladle_ops.coverage
+_intervals.expand         = _ladle_ops.expand
+_intervals.shift          = _ladle_ops.shift
+_intervals.sort_bedframe  = _ladle_ops.sort_bedframe
+_intervals.flank          = _ladle_ops.flank
+_intervals.set_width      = _ladle_ops.set_width
+_intervals.tile           = _ladle_ops.tile
+_intervals.disjoin        = _ladle_ops.disjoin
 _register("ladle.ops", _ops, {"intervals": _intervals})
 
 # ── Public API ────────────────────────────────────────────────────────────────
