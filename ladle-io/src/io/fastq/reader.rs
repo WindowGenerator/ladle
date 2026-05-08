@@ -41,7 +41,9 @@ impl PyReader {
             .extract()?;
         let owned_fd = unsafe { libc::dup(fd) };
         if owned_fd < 0 {
-            return Err(PyIOError::new_err(std::io::Error::last_os_error().to_string()));
+            return Err(PyIOError::new_err(
+                std::io::Error::last_os_error().to_string(),
+            ));
         }
         let file = unsafe { File::from_raw_fd(owned_fd) };
         let inner = noodles::fastq::io::Reader::new(BufReader::new(file));
@@ -83,6 +85,10 @@ impl PyReader {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Reader(<open>)" } else { "Reader(<closed>)" }
+        if self.inner.is_some() {
+            "Reader(<open>)"
+        } else {
+            "Reader(<closed>)"
+        }
     }
 }

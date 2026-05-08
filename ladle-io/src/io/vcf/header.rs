@@ -21,7 +21,9 @@ impl From<Header> for PyHeader {
 impl PyHeader {
     #[new]
     fn new() -> Self {
-        Self { inner: Header::default() }
+        Self {
+            inner: Header::default(),
+        }
     }
 
     #[staticmethod]
@@ -61,29 +63,39 @@ impl PyHeader {
     }
 
     fn info_fields<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
-        let items: Vec<Bound<'_, PyTuple>> = self.inner.infos().iter().map(|(key, map)| {
-            let type_str = match map.ty() {
-                InfoType::Integer   => "Integer",
-                InfoType::Float     => "Float",
-                InfoType::Flag      => "Flag",
-                InfoType::Character => "Character",
-                InfoType::String    => "String",
-            };
-            PyTuple::new(py, [key.as_str(), type_str])
-        }).collect::<Result<_, _>>()?;
+        let items: Vec<Bound<'_, PyTuple>> = self
+            .inner
+            .infos()
+            .iter()
+            .map(|(key, map)| {
+                let type_str = match map.ty() {
+                    InfoType::Integer => "Integer",
+                    InfoType::Float => "Float",
+                    InfoType::Flag => "Flag",
+                    InfoType::Character => "Character",
+                    InfoType::String => "String",
+                };
+                PyTuple::new(py, [key.as_str(), type_str])
+            })
+            .collect::<Result<_, _>>()?;
         PyList::new(py, items)
     }
 
     fn format_fields<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
-        let items: Vec<Bound<'_, PyTuple>> = self.inner.formats().iter().map(|(key, map)| {
-            let type_str = match map.ty() {
-                FormatType::Integer   => "Integer",
-                FormatType::Float     => "Float",
-                FormatType::Character => "Character",
-                FormatType::String    => "String",
-            };
-            PyTuple::new(py, [key.as_str(), type_str])
-        }).collect::<Result<_, _>>()?;
+        let items: Vec<Bound<'_, PyTuple>> = self
+            .inner
+            .formats()
+            .iter()
+            .map(|(key, map)| {
+                let type_str = match map.ty() {
+                    FormatType::Integer => "Integer",
+                    FormatType::Float => "Float",
+                    FormatType::Character => "Character",
+                    FormatType::String => "String",
+                };
+                PyTuple::new(py, [key.as_str(), type_str])
+            })
+            .collect::<Result<_, _>>()?;
         PyList::new(py, items)
     }
 

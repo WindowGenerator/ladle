@@ -93,6 +93,10 @@ impl PyReader {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Reader(<open>)" } else { "Reader(<closed>)" }
+        if self.inner.is_some() {
+            "Reader(<open>)"
+        } else {
+            "Reader(<closed>)"
+        }
     }
 }

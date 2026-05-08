@@ -21,7 +21,11 @@ impl PyRecord {
 
     fn description<'py>(&self, py: Python<'py>) -> Option<Bound<'py, PyBytes>> {
         let d = self.inner.description();
-        if d.is_empty() { None } else { Some(PyBytes::new(py, d)) }
+        if d.is_empty() {
+            None
+        } else {
+            Some(PyBytes::new(py, d))
+        }
     }
 
     fn sequence<'py>(&self, py: Python<'py>) -> Bound<'py, PyBytes> {

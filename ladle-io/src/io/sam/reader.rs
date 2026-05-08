@@ -43,7 +43,9 @@ impl PyReader {
             .extract()?;
         let owned_fd = unsafe { libc::dup(fd) };
         if owned_fd < 0 {
-            return Err(PyIOError::new_err(std::io::Error::last_os_error().to_string()));
+            return Err(PyIOError::new_err(
+                std::io::Error::last_os_error().to_string(),
+            ));
         }
         let file = unsafe { File::from_raw_fd(owned_fd) };
         let inner = noodles::sam::io::Reader::new(BufReader::new(file));
@@ -100,7 +102,9 @@ impl PyReader {
                 let n = reader
                     .read_record(&mut record)
                     .map_err(|e| PyIOError::new_err(e.to_string()))?;
-                if n == 0 { break; }
+                if n == 0 {
+                    break;
+                }
                 records.push(record.clone());
             }
             Ok(())
@@ -109,6 +113,10 @@ impl PyReader {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Reader(<open>)" } else { "Reader(<closed>)" }
+        if self.inner.is_some() {
+            "Reader(<open>)"
+        } else {
+            "Reader(<closed>)"
+        }
     }
 }

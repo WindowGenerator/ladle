@@ -18,44 +18,70 @@ impl PyFlags {
     // Class-level bit constants
     #[classattr]
     #[allow(non_snake_case)]
-    fn SEGMENTED() -> u16 { 0x0001 }
+    fn SEGMENTED() -> u16 {
+        0x0001
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn PROPERLY_SEGMENTED() -> u16 { 0x0002 }
+    fn PROPERLY_SEGMENTED() -> u16 {
+        0x0002
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn UNMAPPED() -> u16 { 0x0004 }
+    fn UNMAPPED() -> u16 {
+        0x0004
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn MATE_UNMAPPED() -> u16 { 0x0008 }
+    fn MATE_UNMAPPED() -> u16 {
+        0x0008
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn REVERSE_COMPLEMENTED() -> u16 { 0x0010 }
+    fn REVERSE_COMPLEMENTED() -> u16 {
+        0x0010
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn MATE_REVERSE_COMPLEMENTED() -> u16 { 0x0020 }
+    fn MATE_REVERSE_COMPLEMENTED() -> u16 {
+        0x0020
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn FIRST_SEGMENT() -> u16 { 0x0040 }
+    fn FIRST_SEGMENT() -> u16 {
+        0x0040
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn LAST_SEGMENT() -> u16 { 0x0080 }
+    fn LAST_SEGMENT() -> u16 {
+        0x0080
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn SECONDARY() -> u16 { 0x0100 }
+    fn SECONDARY() -> u16 {
+        0x0100
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn QC_FAIL() -> u16 { 0x0200 }
+    fn QC_FAIL() -> u16 {
+        0x0200
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn DUPLICATE() -> u16 { 0x0400 }
+    fn DUPLICATE() -> u16 {
+        0x0400
+    }
     #[classattr]
     #[allow(non_snake_case)]
-    fn SUPPLEMENTARY() -> u16 { 0x0800 }
+    fn SUPPLEMENTARY() -> u16 {
+        0x0800
+    }
 
     #[new]
     fn new(bits: u16) -> Self {
-        Self { inner: Flags::from(bits) }
+        Self {
+            inner: Flags::from(bits),
+        }
     }
 
     fn bits(&self) -> u16 {
@@ -86,16 +112,40 @@ impl PyFlags {
         Self::from(Flags::from(u16::from(self.inner) | u16::from(other.inner)))
     }
 
-    fn is_segmented(&self) -> bool { self.inner.is_segmented() }
-    fn is_properly_segmented(&self) -> bool { self.inner.is_properly_segmented() }
-    fn is_unmapped(&self) -> bool { self.inner.is_unmapped() }
-    fn is_mate_unmapped(&self) -> bool { self.inner.is_mate_unmapped() }
-    fn is_reverse_complemented(&self) -> bool { self.inner.is_reverse_complemented() }
-    fn is_mate_reverse_complemented(&self) -> bool { self.inner.is_mate_reverse_complemented() }
-    fn is_first_segment(&self) -> bool { self.inner.is_first_segment() }
-    fn is_last_segment(&self) -> bool { self.inner.is_last_segment() }
-    fn is_secondary(&self) -> bool { self.inner.is_secondary() }
-    fn is_qc_fail(&self) -> bool { self.inner.is_qc_fail() }
-    fn is_duplicate(&self) -> bool { self.inner.is_duplicate() }
-    fn is_supplementary(&self) -> bool { self.inner.is_supplementary() }
+    fn is_segmented(&self) -> bool {
+        self.inner.is_segmented()
+    }
+    fn is_properly_segmented(&self) -> bool {
+        self.inner.is_properly_segmented()
+    }
+    fn is_unmapped(&self) -> bool {
+        self.inner.is_unmapped()
+    }
+    fn is_mate_unmapped(&self) -> bool {
+        self.inner.is_mate_unmapped()
+    }
+    fn is_reverse_complemented(&self) -> bool {
+        self.inner.is_reverse_complemented()
+    }
+    fn is_mate_reverse_complemented(&self) -> bool {
+        self.inner.is_mate_reverse_complemented()
+    }
+    fn is_first_segment(&self) -> bool {
+        self.inner.is_first_segment()
+    }
+    fn is_last_segment(&self) -> bool {
+        self.inner.is_last_segment()
+    }
+    fn is_secondary(&self) -> bool {
+        self.inner.is_secondary()
+    }
+    fn is_qc_fail(&self) -> bool {
+        self.inner.is_qc_fail()
+    }
+    fn is_duplicate(&self) -> bool {
+        self.inner.is_duplicate()
+    }
+    fn is_supplementary(&self) -> bool {
+        self.inner.is_supplementary()
+    }
 }

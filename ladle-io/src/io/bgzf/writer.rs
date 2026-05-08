@@ -95,6 +95,10 @@ impl PyWriter {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Writer(<open>)" } else { "Writer(<closed>)" }
+        if self.inner.is_some() {
+            "Writer(<open>)"
+        } else {
+            "Writer(<closed>)"
+        }
     }
 }

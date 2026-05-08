@@ -6,9 +6,9 @@ use pyo3::prelude::*;
 
 use noodles::sam::alignment::io::Write as _;
 
+use super::record::PyRecord;
 use crate::io::sam::header::PyHeader;
 use crate::io::sam::record::PyRecord as SamPyRecord;
-use super::record::PyRecord;
 
 type Inner = noodles::bam::io::Writer<noodles::bgzf::io::Writer<BufWriter<File>>>;
 
@@ -54,7 +54,8 @@ impl PyWriter {
 
     fn close(&mut self) -> PyResult<()> {
         if let Some(mut w) = self.inner.take() {
-            w.try_finish().map_err(|e| PyIOError::new_err(e.to_string()))?;
+            w.try_finish()
+                .map_err(|e| PyIOError::new_err(e.to_string()))?;
         }
         Ok(())
     }
@@ -73,6 +74,10 @@ impl PyWriter {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Writer(<open>)" } else { "Writer(<closed>)" }
+        if self.inner.is_some() {
+            "Writer(<open>)"
+        } else {
+            "Writer(<closed>)"
+        }
     }
 }

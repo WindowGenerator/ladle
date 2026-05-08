@@ -2,7 +2,12 @@ use noodles::bgzf::VirtualPosition;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-#[pyclass(name = "VirtualPosition", module = "ladle.bgzf", frozen, from_py_object)]
+#[pyclass(
+    name = "VirtualPosition",
+    module = "ladle.bgzf",
+    frozen,
+    from_py_object
+)]
 #[derive(Clone)]
 pub struct PyVirtualPosition {
     pub inner: VirtualPosition,
@@ -30,18 +35,24 @@ impl PyVirtualPosition {
     #[classattr]
     #[allow(non_snake_case)]
     fn MIN() -> Self {
-        Self { inner: VirtualPosition::MIN }
+        Self {
+            inner: VirtualPosition::MIN,
+        }
     }
 
     #[classattr]
     #[allow(non_snake_case)]
     fn MAX() -> Self {
-        Self { inner: VirtualPosition::MAX }
+        Self {
+            inner: VirtualPosition::MAX,
+        }
     }
 
     #[staticmethod]
     fn from_u64(n: u64) -> Self {
-        Self { inner: VirtualPosition::from(n) }
+        Self {
+            inner: VirtualPosition::from(n),
+        }
     }
 
     fn compressed(&self) -> u64 {

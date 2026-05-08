@@ -26,13 +26,17 @@ impl PyMappingQuality {
     #[classattr]
     #[allow(non_snake_case)]
     fn MIN() -> Self {
-        Self { inner: MappingQuality::MIN }
+        Self {
+            inner: MappingQuality::MIN,
+        }
     }
 
     #[classattr]
     #[allow(non_snake_case)]
     fn MAX() -> Self {
-        Self { inner: MappingQuality::MAX }
+        Self {
+            inner: MappingQuality::MAX,
+        }
     }
 
     fn get(&self) -> u8 {

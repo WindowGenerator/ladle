@@ -1,10 +1,10 @@
-use noodles::vcf::variant::record::info::field::Value;
-use noodles::vcf::variant::record::info::field::value::Array;
 use noodles::vcf::variant::record::AlternateBases as _;
 use noodles::vcf::variant::record::Filters as _;
 use noodles::vcf::variant::record::Ids as _;
 use noodles::vcf::variant::record::Info as _;
 use noodles::vcf::variant::record::ReferenceBases as _;
+use noodles::vcf::variant::record::info::field::Value;
+use noodles::vcf::variant::record::info::field::value::Array;
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict, PyList, PyString};
@@ -26,8 +26,13 @@ impl From<noodles::bcf::Record> for PyRecord {
 
 #[pymethods]
 impl PyRecord {
-    fn reference_sequence_name<'py>(&self, py: Python<'py>, header: &PyHeader) -> PyResult<Bound<'py, PyString>> {
-        let name = self.inner
+    fn reference_sequence_name<'py>(
+        &self,
+        py: Python<'py>,
+        header: &PyHeader,
+    ) -> PyResult<Bound<'py, PyString>> {
+        let name = self
+            .inner
             .reference_sequence_name(header.inner.string_maps())
             .map_err(|e| PyIOError::new_err(e.to_string()))?;
         Ok(PyString::new(py, name))
@@ -66,7 +71,10 @@ impl PyRecord {
             .inner
             .alternate_bases()
             .iter()
-            .map(|r| r.map(|s| PyString::new(py, s)).map_err(|e| PyIOError::new_err(e.to_string())))
+            .map(|r| {
+                r.map(|s| PyString::new(py, s))
+                    .map_err(|e| PyIOError::new_err(e.to_string()))
+            })
             .collect::<PyResult<_>>()?;
         PyList::new(py, alts)
     }
@@ -82,7 +90,10 @@ impl PyRecord {
             .inner
             .filters()
             .iter(&header.inner)
-            .map(|r| r.map(|s| PyString::new(py, s)).map_err(|e| PyIOError::new_err(e.to_string())))
+            .map(|r| {
+                r.map(|s| PyString::new(py, s))
+                    .map_err(|e| PyIOError::new_err(e.to_string()))
+            })
             .collect::<PyResult<_>>()?;
         PyList::new(py, filters)
     }
@@ -144,14 +155,20 @@ fn info_array_to_py<'py>(py: Python<'py>, arr: Array<'_>) -> PyResult<Bound<'py,
         Array::Character(values) => {
             let items: Vec<Option<String>> = values
                 .iter()
-                .map(|r| r.map(|c| c.map(|c| c.to_string())).map_err(|e| PyIOError::new_err(e.to_string())))
+                .map(|r| {
+                    r.map(|c| c.map(|c| c.to_string()))
+                        .map_err(|e| PyIOError::new_err(e.to_string()))
+                })
                 .collect::<PyResult<_>>()?;
             PyList::new(py, items)
         }
         Array::String(values) => {
             let items: Vec<Option<String>> = values
                 .iter()
-                .map(|r| r.map(|s| s.map(|s| s.to_string())).map_err(|e| PyIOError::new_err(e.to_string())))
+                .map(|r| {
+                    r.map(|s| s.map(|s| s.to_string()))
+                        .map_err(|e| PyIOError::new_err(e.to_string()))
+                })
                 .collect::<PyResult<_>>()?;
             PyList::new(py, items)
         }

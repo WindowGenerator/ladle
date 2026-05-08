@@ -2,7 +2,7 @@ use arrow::array::RecordBatch;
 use arrow::compute::concat_batches;
 use arrow_array::ffi_stream::{ArrowArrayStreamReader, FFI_ArrowArrayStream};
 use arrow_array::{RecordBatchIterator as ArrowRecordBatchIterator, RecordBatchReader};
-use pyo3::exceptions::{PyImportError, PyIOError};
+use pyo3::exceptions::{PyIOError, PyImportError};
 use pyo3::prelude::*;
 
 /// Any Python object with `__arrow_c_stream__` → Arrow `RecordBatch`.
@@ -43,9 +43,9 @@ pub fn batch_to_pyarrow<'py>(py: Python<'py>, batch: RecordBatch) -> PyResult<Bo
         schema,
     )));
     let stream_ptr = Box::into_raw(Box::new(stream)) as usize;
-    let pa = py.import("pyarrow").map_err(|_| {
-        PyImportError::new_err("pyarrow not installed — pip install ladle[arrow]")
-    })?;
+    let pa = py
+        .import("pyarrow")
+        .map_err(|_| PyImportError::new_err("pyarrow not installed — pip install ladle[arrow]"))?;
     let reader = pa
         .getattr("RecordBatchReader")?
         .getattr("_import_from_c")?

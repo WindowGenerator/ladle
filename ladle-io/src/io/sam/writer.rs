@@ -28,7 +28,9 @@ impl PyWriter {
     #[staticmethod]
     fn from_path(path: &str) -> PyResult<Self> {
         let file = File::create(path).map_err(|e| PyIOError::new_err(e.to_string()))?;
-        Ok(Self { inner: Some(Writer::new(BufWriter::new(file))) })
+        Ok(Self {
+            inner: Some(Writer::new(BufWriter::new(file))),
+        })
     }
 
     fn write_header(&mut self, header: &PyHeader) -> PyResult<()> {
@@ -61,6 +63,10 @@ impl PyWriter {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Writer(<open>)" } else { "Writer(<closed>)" }
+        if self.inner.is_some() {
+            "Writer(<open>)"
+        } else {
+            "Writer(<closed>)"
+        }
     }
 }

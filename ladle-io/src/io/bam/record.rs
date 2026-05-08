@@ -1,6 +1,6 @@
 use bstr::ByteSlice;
-use noodles::sam::alignment::record::data::field::value::Array;
 use noodles::sam::alignment::record::data::field::Value;
+use noodles::sam::alignment::record::data::field::value::Array;
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict, PyList};

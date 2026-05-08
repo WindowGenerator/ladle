@@ -5,10 +5,10 @@ use std::os::unix::io::{FromRawFd, RawFd};
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
-use crate::io::core::PyRegion;
-use crate::io::vcf::header::PyHeader;
 use super::batch::PyBcfRecordBatch;
 use super::record::PyRecord;
+use crate::io::core::PyRegion;
+use crate::io::vcf::header::PyHeader;
 
 type Inner = noodles::bcf::io::Reader<noodles::bgzf::io::Reader<File>>;
 type InnerIndexedReader = noodles::bcf::io::IndexedReader<noodles::bgzf::io::Reader<File>>;
@@ -48,7 +48,9 @@ impl PyReader {
             .extract()?;
         let owned_fd = unsafe { libc::dup(fd) };
         if owned_fd < 0 {
-            return Err(PyIOError::new_err(std::io::Error::last_os_error().to_string()));
+            return Err(PyIOError::new_err(
+                std::io::Error::last_os_error().to_string(),
+            ));
         }
         let file = unsafe { File::from_raw_fd(owned_fd) };
         let inner = noodles::bcf::io::Reader::new(file);
@@ -96,7 +98,11 @@ impl PyReader {
         self.close();
     }
 
-    fn records_to_batch(&mut self, py: Python<'_>, header: &PyHeader) -> PyResult<PyBcfRecordBatch> {
+    fn records_to_batch(
+        &mut self,
+        py: Python<'_>,
+        header: &PyHeader,
+    ) -> PyResult<PyBcfRecordBatch> {
         let reader = self.get()?;
         let mut records: Vec<noodles::bcf::Record> = Vec::new();
         let mut record = noodles::bcf::Record::default();
@@ -105,7 +111,9 @@ impl PyReader {
                 let n = reader
                     .read_record(&mut record)
                     .map_err(|e| PyIOError::new_err(e.to_string()))?;
-                if n == 0 { break; }
+                if n == 0 {
+                    break;
+                }
                 records.push(record.clone());
             }
             Ok(())
@@ -115,7 +123,11 @@ impl PyReader {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Reader(<open>)" } else { "Reader(<closed>)" }
+        if self.inner.is_some() {
+            "Reader(<open>)"
+        } else {
+            "Reader(<closed>)"
+        }
     }
 }
 
@@ -197,7 +209,11 @@ impl PyIndexedReader {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "IndexedReader(<open>)" } else { "IndexedReader(<closed>)" }
+        if self.inner.is_some() {
+            "IndexedReader(<open>)"
+        } else {
+            "IndexedReader(<closed>)"
+        }
     }
 }
 

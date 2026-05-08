@@ -4,9 +4,9 @@ use noodles::vcf::variant::io::Write as VcfWrite;
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
+use super::record::PyRecord;
 use crate::io::vcf::header::PyHeader;
 use crate::io::vcf::record::PyRecord as VcfPyRecord;
-use super::record::PyRecord;
 
 type Inner = noodles::bcf::io::Writer<noodles::bgzf::io::Writer<File>>;
 
@@ -28,7 +28,9 @@ impl PyWriter {
     #[staticmethod]
     fn from_path(path: &str) -> PyResult<Self> {
         let file = File::create(path).map_err(|e| PyIOError::new_err(e.to_string()))?;
-        Ok(Self { inner: Some(noodles::bcf::io::Writer::new(file)) })
+        Ok(Self {
+            inner: Some(noodles::bcf::io::Writer::new(file)),
+        })
     }
 
     fn write_header(&mut self, header: &PyHeader) -> PyResult<()> {
@@ -51,7 +53,8 @@ impl PyWriter {
 
     fn close(&mut self) -> PyResult<()> {
         if let Some(mut w) = self.inner.take() {
-            w.try_finish().map_err(|e| PyIOError::new_err(e.to_string()))?;
+            w.try_finish()
+                .map_err(|e| PyIOError::new_err(e.to_string()))?;
         }
         Ok(())
     }
@@ -70,6 +73,10 @@ impl PyWriter {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Writer(<open>)" } else { "Writer(<closed>)" }
+        if self.inner.is_some() {
+            "Writer(<open>)"
+        } else {
+            "Writer(<closed>)"
+        }
     }
 }

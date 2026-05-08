@@ -15,9 +15,9 @@ pub mod bgzf {
     use pyo3::prelude::*;
 
     #[pymodule_export]
-    use super::PyVirtualPosition as VirtualPosition;
-    #[pymodule_export]
     use super::PyReader as Reader;
+    #[pymodule_export]
+    use super::PyVirtualPosition as VirtualPosition;
     #[pymodule_export]
     use super::PyWriter as Writer;
     #[pymodule_export]

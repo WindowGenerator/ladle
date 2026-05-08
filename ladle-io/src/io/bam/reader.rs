@@ -5,10 +5,10 @@ use std::os::unix::io::{FromRawFd, RawFd};
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
-use crate::io::core::PyRegion;
-use crate::io::sam::header::PyHeader;
 use super::batch::PyBamRecordBatch;
 use super::record::PyRecord;
+use crate::io::core::PyRegion;
+use crate::io::sam::header::PyHeader;
 
 type InnerReader = noodles::bam::io::Reader<noodles::bgzf::io::Reader<File>>;
 type InnerIndexedReader = noodles::bam::io::IndexedReader<noodles::bgzf::io::Reader<File>>;
@@ -49,7 +49,9 @@ impl PyReader {
         // dup() so Rust owns an independent fd; the Python file object retains its original.
         let owned_fd = unsafe { libc::dup(fd) };
         if owned_fd < 0 {
-            return Err(PyIOError::new_err(std::io::Error::last_os_error().to_string()));
+            return Err(PyIOError::new_err(
+                std::io::Error::last_os_error().to_string(),
+            ));
         }
         let file = unsafe { File::from_raw_fd(owned_fd) };
         let inner = noodles::bam::io::Reader::new(file);
@@ -106,17 +108,22 @@ impl PyReader {
                 let n = reader
                     .read_record(&mut record)
                     .map_err(|e| PyIOError::new_err(e.to_string()))?;
-                if n == 0 { break; }
+                if n == 0 {
+                    break;
+                }
                 records.push(record.clone());
             }
             Ok(())
         })?;
-        PyBamRecordBatch::try_new(records)
-            .map_err(|e| PyIOError::new_err(e.to_string()))
+        PyBamRecordBatch::try_new(records).map_err(|e| PyIOError::new_err(e.to_string()))
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "Reader(<open>)" } else { "Reader(<closed>)" }
+        if self.inner.is_some() {
+            "Reader(<open>)"
+        } else {
+            "Reader(<closed>)"
+        }
     }
 }
 
@@ -200,7 +207,11 @@ impl PyIndexedReader {
     }
 
     fn __repr__(&self) -> &str {
-        if self.inner.is_some() { "IndexedReader(<open>)" } else { "IndexedReader(<closed>)" }
+        if self.inner.is_some() {
+            "IndexedReader(<open>)"
+        } else {
+            "IndexedReader(<closed>)"
+        }
     }
 }
 

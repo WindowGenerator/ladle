@@ -35,13 +35,17 @@ impl PyPosition {
     #[classattr]
     #[allow(non_snake_case)]
     fn MIN() -> Self {
-        Self { inner: Position::MIN }
+        Self {
+            inner: Position::MIN,
+        }
     }
 
     #[classattr]
     #[allow(non_snake_case)]
     fn MAX() -> Self {
-        Self { inner: Position::MAX }
+        Self {
+            inner: Position::MAX,
+        }
     }
 
     fn get(&self) -> usize {

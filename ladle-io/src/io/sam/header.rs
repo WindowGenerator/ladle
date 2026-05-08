@@ -21,7 +21,9 @@ impl From<Header> for PyHeader {
 impl PyHeader {
     #[new]
     fn new() -> Self {
-        Self { inner: Header::default() }
+        Self {
+            inner: Header::default(),
+        }
     }
 
     #[staticmethod]
