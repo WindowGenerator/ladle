@@ -2,10 +2,12 @@ from ladle.ops.intervals import (
     overlap, nearest, count_overlaps,
     cluster, merge, subtract, complement, coverage,
     expand, shift, sort_bedframe, flank, set_width, tile, disjoin,
+    intersect_ranges, union_ranges, setdiff_ranges,
 )
 
 __all__ = [
     "overlap", "nearest", "count_overlaps",
     "cluster", "merge", "subtract", "complement", "coverage",
     "expand", "shift", "sort_bedframe", "flank", "set_width", "tile", "disjoin",
+    "intersect_ranges", "union_ranges", "setdiff_ranges",
 ]

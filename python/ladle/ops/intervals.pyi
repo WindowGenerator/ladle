@@ -162,3 +162,30 @@ def disjoin(a: Any) -> Any:
     Returns chrom/start/end columns only.
     """
     ...
+
+def intersect_ranges(a: Any, b: Any) -> Any:
+    """
+    Return regions covered by both `a` and `b`.
+
+    Clips overlapping pairs to their intersection and merges the result.
+    Returns chrom/start/end columns only.
+    """
+    ...
+
+def union_ranges(a: Any, b: Any) -> Any:
+    """
+    Return regions covered by `a` or `b` (positional union).
+
+    Equivalent to merging the concatenation of both interval sets.
+    Returns chrom/start/end columns only.
+    """
+    ...
+
+def setdiff_ranges(a: Any, b: Any) -> Any:
+    """
+    Return regions in `a` not covered by `b`.
+
+    Clips `a` intervals around all overlapping `b` intervals.
+    Returns chrom/start/end columns only.
+    """
+    ...

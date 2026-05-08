@@ -59,7 +59,10 @@ _intervals.sort_bedframe  = _ladle_ops.sort_bedframe
 _intervals.flank          = _ladle_ops.flank
 _intervals.set_width      = _ladle_ops.set_width
 _intervals.tile           = _ladle_ops.tile
-_intervals.disjoin        = _ladle_ops.disjoin
+_intervals.disjoin          = _ladle_ops.disjoin
+_intervals.intersect_ranges = _ladle_ops.intersect_ranges
+_intervals.union_ranges     = _ladle_ops.union_ranges
+_intervals.setdiff_ranges   = _ladle_ops.setdiff_ranges
 _register("ladle.ops", _ops, {"intervals": _intervals})
 
 # ── Public API ────────────────────────────────────────────────────────────────

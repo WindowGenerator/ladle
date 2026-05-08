@@ -735,3 +735,139 @@ class TestDisjoin:
         r = intervals.disjoin(a)
         # boundaries: 1,5,8,10,15,20 → pieces: [1,5],[5,8],[8,10],[10,15],[15,20]
         assert r.num_rows == 5
+
+
+# ---------------------------------------------------------------------------
+# intersect_ranges
+# ---------------------------------------------------------------------------
+
+class TestIntersectRanges:
+    def test_basic(self):
+        a = make_batch([("chr1", 0, 20)])
+        b = make_batch([("chr1", 10, 30)])
+        r = intervals.intersect_ranges(a, b)
+        assert r.num_rows == 1
+        assert r["start"][0].as_py() == 10
+        assert r["end"][0].as_py() == 20
+
+    def test_no_overlap(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr1", 20, 30)])
+        r = intervals.intersect_ranges(a, b)
+        assert r.num_rows == 0
+
+    def test_cross_chrom_no_intersection(self):
+        a = make_batch([("chr1", 0, 100)])
+        b = make_batch([("chr2", 0, 100)])
+        r = intervals.intersect_ranges(a, b)
+        assert r.num_rows == 0
+
+    def test_output_schema(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr1", 5, 15)])
+        r = intervals.intersect_ranges(a, b)
+        assert set(r.schema.names) == {"chrom", "start", "end"}
+
+    def test_containment(self):
+        a = make_batch([("chr1", 0, 100)])
+        b = make_batch([("chr1", 10, 20), ("chr1", 50, 60)])
+        r = intervals.intersect_ranges(a, b)
+        assert r.num_rows == 2
+
+    def test_empty_a(self):
+        a = make_batch([])
+        b = make_batch([("chr1", 0, 10)])
+        r = intervals.intersect_ranges(a, b)
+        assert r.num_rows == 0
+
+
+# ---------------------------------------------------------------------------
+# union_ranges
+# ---------------------------------------------------------------------------
+
+class TestUnionRanges:
+    def test_basic(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr1", 5, 15)])
+        r = intervals.union_ranges(a, b)
+        assert r.num_rows == 1
+        assert r["start"][0].as_py() == 0
+        assert r["end"][0].as_py() == 15
+
+    def test_no_overlap(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr1", 20, 30)])
+        r = intervals.union_ranges(a, b)
+        assert r.num_rows == 2
+
+    def test_cross_chrom(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr2", 0, 10)])
+        r = intervals.union_ranges(a, b)
+        assert r.num_rows == 2
+
+    def test_output_schema(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr1", 5, 15)])
+        r = intervals.union_ranges(a, b)
+        assert set(r.schema.names) == {"chrom", "start", "end"}
+
+    def test_empty_a(self):
+        a = make_batch([])
+        b = make_batch([("chr1", 0, 10)])
+        r = intervals.union_ranges(a, b)
+        assert r.num_rows == 1
+
+    def test_empty_b(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([])
+        r = intervals.union_ranges(a, b)
+        assert r.num_rows == 1
+
+
+# ---------------------------------------------------------------------------
+# setdiff_ranges
+# ---------------------------------------------------------------------------
+
+class TestSetdiffRanges:
+    def test_basic(self):
+        a = make_batch([("chr1", 0, 20)])
+        b = make_batch([("chr1", 10, 30)])
+        r = intervals.setdiff_ranges(a, b)
+        assert r.num_rows == 1
+        assert r["start"][0].as_py() == 0
+        assert r["end"][0].as_py() == 10
+
+    def test_no_overlap_kept(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr1", 20, 30)])
+        r = intervals.setdiff_ranges(a, b)
+        assert r.num_rows == 1
+        assert r["start"][0].as_py() == 0
+        assert r["end"][0].as_py() == 10
+
+    def test_full_overlap_removed(self):
+        a = make_batch([("chr1", 5, 15)])
+        b = make_batch([("chr1", 0, 20)])
+        r = intervals.setdiff_ranges(a, b)
+        assert r.num_rows == 0
+
+    def test_middle_removed(self):
+        a = make_batch([("chr1", 0, 30)])
+        b = make_batch([("chr1", 10, 20)])
+        r = intervals.setdiff_ranges(a, b)
+        assert r.num_rows == 2
+        pairs = sorted([(r["start"][i].as_py(), r["end"][i].as_py()) for i in range(2)])
+        assert pairs == [(0, 10), (20, 30)]
+
+    def test_cross_chrom_kept(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr2", 0, 10)])
+        r = intervals.setdiff_ranges(a, b)
+        assert r.num_rows == 1
+
+    def test_output_schema(self):
+        a = make_batch([("chr1", 0, 10)])
+        b = make_batch([("chr1", 5, 15)])
+        r = intervals.setdiff_ranges(a, b)
+        assert set(r.schema.names) == {"chrom", "start", "end"}

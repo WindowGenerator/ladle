@@ -5,8 +5,9 @@ mod intervals;
 
 use intervals::ops::{
     py_cluster, py_complement, py_count_overlaps, py_coverage, py_disjoin,
-    py_expand, py_flank, py_merge, py_nearest, py_overlap, py_set_width,
-    py_shift, py_sort_bedframe, py_subtract, py_tile,
+    py_expand, py_flank, py_intersect_ranges, py_merge, py_nearest, py_overlap,
+    py_set_width, py_setdiff_ranges, py_shift, py_sort_bedframe, py_subtract,
+    py_tile, py_union_ranges,
 };
 
 #[pymodule]
@@ -15,8 +16,9 @@ mod _ladle_ops {
 
     use super::{
         py_cluster, py_complement, py_count_overlaps, py_coverage, py_disjoin,
-        py_expand, py_flank, py_merge, py_nearest, py_overlap, py_set_width,
-        py_shift, py_sort_bedframe, py_subtract, py_tile,
+        py_expand, py_flank, py_intersect_ranges, py_merge, py_nearest, py_overlap,
+        py_set_width, py_setdiff_ranges, py_shift, py_sort_bedframe, py_subtract,
+        py_tile, py_union_ranges,
     };
 
     #[pymodule_init]
@@ -36,6 +38,9 @@ mod _ladle_ops {
         m.add_function(wrap_pyfunction!(py_set_width, m)?)?;
         m.add_function(wrap_pyfunction!(py_tile, m)?)?;
         m.add_function(wrap_pyfunction!(py_disjoin, m)?)?;
+        m.add_function(wrap_pyfunction!(py_intersect_ranges, m)?)?;
+        m.add_function(wrap_pyfunction!(py_union_ranges, m)?)?;
+        m.add_function(wrap_pyfunction!(py_setdiff_ranges, m)?)?;
         Ok(())
     }
 }
