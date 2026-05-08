@@ -1,5 +1,5 @@
 import pytest
-from ladle.io.vcf import Header, Reader, Record, Writer
+from ladle.io.vcf import Header, Reader, Writer
 
 # ---------------------------------------------------------------------------
 # Minimal VCF text used across tests

@@ -1,7 +1,7 @@
 import pytest
 
 pa = pytest.importorskip("pyarrow")
-import ladle.ops.intervals as intervals
+import ladle.ops.intervals as intervals # noqa: E402
 
 
 def make_batch(rows, **extra):

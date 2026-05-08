@@ -25,7 +25,7 @@ SAM_TEXT = HEADER_TEXT + RECORD_LINE
 
 def _write_bam_from_sam(sam_text: str, bam_path: str) -> Header:
     """Write a BAM file from SAM text, return the parsed header."""
-    import tempfile, os
+    import os
 
     sam_path = bam_path + ".sam_tmp"
     with open(sam_path, "w") as f:
@@ -96,7 +96,7 @@ class TestReaderWriter:
 
     def test_full_round_trip(self, tmp_path):
         bam_path = str(tmp_path / "out.bam")
-        header = _write_bam_from_sam(SAM_TEXT, bam_path)
+        _write_bam_from_sam(SAM_TEXT, bam_path)
 
         with Reader.from_path(bam_path) as r:
             h2 = r.read_header()

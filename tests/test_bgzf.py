@@ -1,4 +1,3 @@
-import os
 import pytest
 from ladle.io.bgzf import (
     COMPRESSION_BEST,
@@ -8,7 +7,6 @@ from ladle.io.bgzf import (
     VirtualPosition,
     Writer,
 )
-import ladle.io.bgzf.gzi as gzi
 
 
 class TestVirtualPosition:
@@ -116,7 +114,7 @@ class TestRoundTrip:
 
     def test_empty_file(self, tmp_path):
         path = str(tmp_path / "empty.bgzf")
-        with Writer.from_path(path) as w:
+        with Writer.from_path(path):
             pass
         with Reader.from_path(path) as r:
             assert r.read(10) == b""

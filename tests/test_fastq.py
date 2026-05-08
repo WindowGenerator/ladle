@@ -1,6 +1,6 @@
 import io
 import pytest
-from ladle.io.fastq import Reader, Record, Writer
+from ladle.io.fastq import Reader, Writer
 
 # ---------------------------------------------------------------------------
 # Minimal FASTQ text used across tests

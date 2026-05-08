@@ -5,7 +5,7 @@ import pytest
 
 import ladle.io.vcf as vcf
 import ladle.io.bcf as bcf
-from ladle.io.bcf import RecordBatch, RecordBatchIterator
+from ladle.io.bcf import RecordBatch
 
 # ---------------------------------------------------------------------------
 # Minimal VCF text used to create BCF fixtures
@@ -332,7 +332,7 @@ class TestBcfRecordBatch:
         assert "RecordBatch" in repr(info_fmt_batch)
 
     def test_has_base_columns(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = info_fmt_batch.to_arrow().schema.names
         for col in ("chrom", "pos", "ref", "alt", "qual"):
             assert col in names
@@ -370,25 +370,25 @@ class TestBcfRecordBatch:
         assert info_fmt_batch.to_arrow().schema.field("INFO_DB").type == pa.bool_()
 
     def test_info_dp_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("INFO_DP")
         assert col[0].as_py() == 20
         assert col[1].as_py() == 15
 
     def test_info_af_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("INFO_AF")
         assert abs(col[0].as_py() - 0.5) < 0.001
         assert abs(col[1].as_py() - 0.3) < 0.001
 
     def test_info_db_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("INFO_DB")
         assert col[0].as_py() is True
         assert col[1].as_py() is False
 
     def test_fmt_gt_both_samples(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("FMT_GT")
         val = col[0].as_py()
         assert val is not None
@@ -396,21 +396,21 @@ class TestBcfRecordBatch:
         assert len(parts) == 2
 
     def test_fmt_gt_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("FMT_GT")
         row0 = col[0].as_py().split("\t")
         assert row0[0] in ("0/1", "0|1")
         assert row0[1] in ("1/1", "1|1")
 
     def test_fmt_gq_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("FMT_GQ")
         parts = col[0].as_py().split("\t")
         assert parts[0] == "40"
         assert parts[1] == "50"
 
     def test_missing_info_is_null(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("INFO_DB")
         assert col[1].as_py() is False  # DB absent on row 2 → false for Flag
 
@@ -431,7 +431,7 @@ class TestBcfRecordBatch:
         assert len(recs) == 2
 
     def test_from_arrow_roundtrip(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         b2 = RecordBatch.from_arrow(info_fmt_batch.to_arrow())
         assert len(b2) == 2
 

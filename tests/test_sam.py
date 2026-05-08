@@ -1,5 +1,5 @@
 import pytest
-from ladle.io.sam import Flags, Header, MappingQuality, Reader, Record, Writer
+from ladle.io.sam import Flags, Header, MappingQuality, Reader, Writer
 
 # ---------------------------------------------------------------------------
 # Minimal SAM text used across tests

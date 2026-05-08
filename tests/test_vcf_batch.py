@@ -1,9 +1,6 @@
-import os
-import tempfile
 
 import pytest
 
-import ladle.io.vcf as vcf
 from ladle.io.vcf import Reader, RecordBatch, RecordBatchIterator, Record
 
 # ---------------------------------------------------------------------------
@@ -102,11 +99,11 @@ class TestToArrow:
         assert isinstance(b, pa.RecordBatch)
 
     def test_num_rows(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         assert batch.to_arrow().num_rows == 5
 
     def test_schema_field_names(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = batch.to_arrow().schema.names
         for field in ("chrom", "pos", "id", "ref", "alt", "qual"):
             assert field in names
@@ -124,38 +121,38 @@ class TestToArrow:
         assert batch.to_arrow().schema.field("qual").type == pa.float32()
 
     def test_chrom_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("chrom")
         assert all(col[i].as_py() == "chr1" for i in range(5))
 
     def test_pos_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("pos")
         assert col[0].as_py() == 100
         assert col[4].as_py() == 104
 
     def test_id_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("id")
         assert col[0].as_py() == "rs0"
 
     def test_ref_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("ref")
         assert col[0].as_py() == "A"
 
     def test_alt_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("alt")
         assert col[0].as_py() == "G"
 
     def test_qual_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("qual")
         assert abs(col[0].as_py() - 30.0) < 0.01
 
     def test_missing_qual_is_null(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         path = str(tmp_path / "noqual.vcf")
         _write_vcf(MISSING_QUAL_TEXT, path)
         with Reader.from_path(path) as r:
@@ -165,7 +162,7 @@ class TestToArrow:
         assert col[0].as_py() is None
 
     def test_no_alt_is_null(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         path = str(tmp_path / "noalt.vcf")
         _write_vcf(NO_ALT_TEXT, path)
         with Reader.from_path(path) as r:
@@ -175,7 +172,7 @@ class TestToArrow:
         assert col[0].as_py() is None
 
     def test_multi_alt_joined(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         path = str(tmp_path / "multialt.vcf")
         _write_vcf(MULTI_ALT_TEXT, path)
         with Reader.from_path(path) as r:
@@ -185,7 +182,7 @@ class TestToArrow:
         assert col[0].as_py() == "G,T"
 
     def test_missing_id_is_null(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         path = str(tmp_path / "noid.vcf")
         _write_vcf(HEADER_TEXT + "chr1\t100\t.\tA\tG\t.\t.\t.\n", path)
         with Reader.from_path(path) as r:
@@ -195,7 +192,7 @@ class TestToArrow:
         assert col[0].as_py() is None
 
     def test_empty_batch_arrow(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         path = str(tmp_path / "empty.vcf")
         _write_vcf(HEADER_TEXT, path)
         with Reader.from_path(path) as r:
@@ -248,11 +245,11 @@ class TestToPolars:
         assert isinstance(df, pl.DataFrame)
 
     def test_row_count(self, batch):
-        pl = pytest.importorskip("polars")
+        pytest.importorskip("polars")
         assert batch.to_polars().height == 5
 
     def test_column_names(self, batch):
-        pl = pytest.importorskip("polars")
+        pytest.importorskip("polars")
         cols = batch.to_polars().columns
         for c in ("chrom", "pos", "ref", "alt", "qual"):
             assert c in cols
@@ -421,32 +418,32 @@ class TestRecordsBatchWithHeader:
         assert len(info_fmt_batch) == 2
 
     def test_has_info_dp_column(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = info_fmt_batch.to_arrow().schema.names
         assert "INFO_DP" in names
 
     def test_has_info_af_column(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = info_fmt_batch.to_arrow().schema.names
         assert "INFO_AF" in names
 
     def test_has_info_db_column(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = info_fmt_batch.to_arrow().schema.names
         assert "INFO_DB" in names
 
     def test_has_info_gene_column(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = info_fmt_batch.to_arrow().schema.names
         assert "INFO_GENE" in names
 
     def test_has_fmt_gt_column(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = info_fmt_batch.to_arrow().schema.names
         assert "FMT_GT" in names
 
     def test_has_fmt_gq_column(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = info_fmt_batch.to_arrow().schema.names
         assert "FMT_GQ" in names
 
@@ -471,31 +468,31 @@ class TestRecordsBatchWithHeader:
         assert schema.field("INFO_GENE").type == pa.large_utf8()
 
     def test_info_dp_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("INFO_DP")
         assert col[0].as_py() == 20
         assert col[1].as_py() == 15
 
     def test_info_af_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("INFO_AF")
         assert abs(col[0].as_py() - 0.5) < 0.001
         assert abs(col[1].as_py() - 0.3) < 0.001
 
     def test_info_db_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("INFO_DB")
         assert col[0].as_py() is True
         assert col[1].as_py() is False
 
     def test_info_gene_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("INFO_GENE")
         assert col[0].as_py() == "TP53"
         assert col[1].as_py() == "BRCA1"
 
     def test_fmt_gt_contains_both_samples(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("FMT_GT")
         val = col[0].as_py()
         assert val is not None
@@ -503,14 +500,14 @@ class TestRecordsBatchWithHeader:
         assert len(parts) == 2
 
     def test_fmt_gt_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("FMT_GT")
         row0 = col[0].as_py().split("\t")
         assert "0/1" in row0[0] or row0[0] in ("0/1", "0|1")
         assert "1/1" in row0[1] or row0[1] in ("1/1", "1|1")
 
     def test_fmt_gq_values(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = info_fmt_batch.to_arrow().column("FMT_GQ")
         val = col[0].as_py()
         assert val is not None
@@ -519,20 +516,20 @@ class TestRecordsBatchWithHeader:
         assert parts[1] == "50"
 
     def test_base_columns_still_present(self, info_fmt_batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = info_fmt_batch.to_arrow().schema.names
         for col in ("chrom", "pos", "ref", "alt", "qual"):
             assert col in names
 
     def test_no_header_gives_6_columns(self, info_fmt_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         with Reader.from_path(info_fmt_path) as r:
             r.read_header()
             b = r.records_to_batch()
         assert b.to_arrow().num_columns == 6
 
     def test_missing_info_field_is_null(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         vcf_text = (
             "##fileformat=VCFv4.2\n"
             "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"depth\">\n"

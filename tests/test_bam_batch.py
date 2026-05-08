@@ -3,7 +3,6 @@ import tempfile
 
 import pytest
 
-import ladle.io.bam as bam
 from ladle.io.bam import Reader, RecordBatch, RecordBatchIterator, Record, Writer
 from ladle.io.sam import Header, Reader as SamReader
 
@@ -118,11 +117,11 @@ class TestToArrow:
         assert isinstance(b, pa.RecordBatch)
 
     def test_num_rows(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         assert batch.to_arrow().num_rows == 5
 
     def test_schema_field_names(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         names = batch.to_arrow().schema.names
         for field in ("name", "flags", "reference_sequence_id", "alignment_start",
                       "mapping_quality", "cigar", "mate_reference_sequence_id",
@@ -148,7 +147,7 @@ class TestToArrow:
         assert batch.to_arrow().schema.field("mapping_quality").type == pa.uint8()
 
     def test_sequence_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("sequence")
         # BAM sequence is stored 4-bit packed; all 5 records have same sequence
         seq = col[0].as_py()
@@ -156,18 +155,18 @@ class TestToArrow:
         assert len(seq) > 0
 
     def test_name_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("name")
         assert col[0].as_py() == b"read0"
 
     def test_alignment_start_values(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         col = batch.to_arrow().column("alignment_start")
         assert col[0].as_py() == 100
         assert col[4].as_py() == 104
 
     def test_empty_batch_arrow(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         path = str(tmp_path / "empty.bam")
         _write_bam(HEADER_TEXT, path)
         with Reader.from_path(path) as r:
@@ -176,7 +175,7 @@ class TestToArrow:
         assert b.to_arrow().num_rows == 0
 
     def test_unmapped_null_alignment_start(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         path = str(tmp_path / "unmap.bam")
         _write_bam(UNMAPPED_TEXT, path)
         with Reader.from_path(path) as r:
@@ -186,7 +185,7 @@ class TestToArrow:
         assert col[0].as_py() is None
 
     def test_nullable_fields_declared_nullable(self, batch):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         schema = batch.to_arrow().schema
         for nullable_field in ("name", "reference_sequence_id", "alignment_start",
                                "mapping_quality", "mate_reference_sequence_id",
@@ -240,11 +239,11 @@ class TestToPolars:
         assert isinstance(df, pl.DataFrame)
 
     def test_row_count(self, batch):
-        pl = pytest.importorskip("polars")
+        pytest.importorskip("polars")
         assert batch.to_polars().height == 5
 
     def test_column_names(self, batch):
-        pl = pytest.importorskip("polars")
+        pytest.importorskip("polars")
         cols = batch.to_polars().columns
         assert "flags" in cols
         assert "sequence" in cols
@@ -303,7 +302,7 @@ class TestFromArrow:
         assert isinstance(b2, RecordBatch)
 
     def test_empty(self, tmp_path):
-        pa = pytest.importorskip("pyarrow")
+        pytest.importorskip("pyarrow")
         path = str(tmp_path / "empty.bam")
         _write_bam(HEADER_TEXT, path)
         with Reader.from_path(path) as r:
