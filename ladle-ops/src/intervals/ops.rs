@@ -6,7 +6,7 @@ use arrow::array::{
 };
 use arrow::datatypes::{DataType, Field, Schema};
 use arrow::error::ArrowError;
-use coitrees::{COITree, Interval, IntervalTree};
+use coitrees::{COITree, GenericInterval, Interval, IntervalTree};
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -98,7 +98,7 @@ fn overlap_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBatch, Arro
             for &a_idx in a_rows {
                 if let Some((_, start, end)) = get_interval(a, &a_cols, a_idx as usize) {
                     tree.query(start, end - 1, |hit| {
-                        local.push((a_idx, *hit.metadata));
+                        local.push((a_idx, *hit.metadata()));
                     });
                 }
             }
@@ -190,7 +190,7 @@ fn nearest_batches(query: &RecordBatch, target: &RecordBatch) -> Result<RecordBa
                     let te = hit.last as i64 + 1;
                     let t_mid = (ts + te) / 2;
                     let diff = (q_mid - t_mid).abs();
-                    let t_idx = *hit.metadata;
+                    let t_idx = *hit.metadata();
                     let better = match best_overlap {
                         None => true,
                         Some((d, bi)) => diff < d || (diff == d && t_idx < bi),
