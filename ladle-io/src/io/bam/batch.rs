@@ -1,46 +1,47 @@
 use std::sync::Arc;
 
-use bstr::ByteSlice;
 use arrow::array::{
-    Array, LargeBinaryBuilder, Int32Builder, UInt8Builder, UInt16Builder,
-    RecordBatch,
+    Array, Int32Builder, LargeBinaryBuilder, RecordBatch, UInt8Builder, UInt16Builder,
 };
 use arrow::datatypes::{DataType, Field, Schema};
-use pyo3::exceptions::{PyImportError, PyIOError};
+use bstr::ByteSlice;
+use pyo3::exceptions::{PyIOError, PyImportError};
 use pyo3::prelude::*;
 
-use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
 use super::record::PyRecord;
+use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
 
 fn bam_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
-        Field::new("name",                       DataType::LargeBinary, true),
-        Field::new("flags",                      DataType::UInt16,      false),
-        Field::new("reference_sequence_id",      DataType::Int32,       true),
-        Field::new("alignment_start",            DataType::Int32,       true),
-        Field::new("mapping_quality",            DataType::UInt8,       true),
-        Field::new("cigar",                      DataType::LargeBinary, false),
-        Field::new("mate_reference_sequence_id", DataType::Int32,       true),
-        Field::new("mate_alignment_start",       DataType::Int32,       true),
-        Field::new("template_length",            DataType::Int32,       false),
-        Field::new("sequence",                   DataType::LargeBinary, false),
-        Field::new("quality_scores",             DataType::LargeBinary, false),
+        Field::new("name", DataType::LargeBinary, true),
+        Field::new("flags", DataType::UInt16, false),
+        Field::new("reference_sequence_id", DataType::Int32, true),
+        Field::new("alignment_start", DataType::Int32, true),
+        Field::new("mapping_quality", DataType::UInt8, true),
+        Field::new("cigar", DataType::LargeBinary, false),
+        Field::new("mate_reference_sequence_id", DataType::Int32, true),
+        Field::new("mate_alignment_start", DataType::Int32, true),
+        Field::new("template_length", DataType::Int32, false),
+        Field::new("sequence", DataType::LargeBinary, false),
+        Field::new("quality_scores", DataType::LargeBinary, false),
     ]))
 }
 
-fn build_bam_batch(records: &[noodles::bam::Record]) -> Result<RecordBatch, arrow::error::ArrowError> {
+fn build_bam_batch(
+    records: &[noodles::bam::Record],
+) -> Result<RecordBatch, arrow::error::ArrowError> {
     let n = records.len();
-    let mut names           = LargeBinaryBuilder::with_capacity(n, n * 10);
-    let mut flags           = UInt16Builder::with_capacity(n);
-    let mut ref_ids         = Int32Builder::with_capacity(n);
-    let mut aln_starts      = Int32Builder::with_capacity(n);
-    let mut mapqs           = UInt8Builder::with_capacity(n);
-    let mut cigars          = LargeBinaryBuilder::with_capacity(n, n * 8);
-    let mut mate_ref_ids    = Int32Builder::with_capacity(n);
-    let mut mate_alns       = Int32Builder::with_capacity(n);
-    let mut tlen            = Int32Builder::with_capacity(n);
-    let mut seqs            = LargeBinaryBuilder::with_capacity(n, n * 150);
-    let mut quals           = LargeBinaryBuilder::with_capacity(n, n * 150);
+    let mut names = LargeBinaryBuilder::with_capacity(n, n * 10);
+    let mut flags = UInt16Builder::with_capacity(n);
+    let mut ref_ids = Int32Builder::with_capacity(n);
+    let mut aln_starts = Int32Builder::with_capacity(n);
+    let mut mapqs = UInt8Builder::with_capacity(n);
+    let mut cigars = LargeBinaryBuilder::with_capacity(n, n * 8);
+    let mut mate_ref_ids = Int32Builder::with_capacity(n);
+    let mut mate_alns = Int32Builder::with_capacity(n);
+    let mut tlen = Int32Builder::with_capacity(n);
+    let mut seqs = LargeBinaryBuilder::with_capacity(n, n * 150);
+    let mut quals = LargeBinaryBuilder::with_capacity(n, n * 150);
 
     for rec in records {
         names.append_option(rec.name().map(|nm| nm.as_bytes()));
@@ -113,7 +114,10 @@ pub struct PyBamRecordBatch {
 impl PyBamRecordBatch {
     pub fn try_new(records: Vec<noodles::bam::Record>) -> Result<Self, arrow::error::ArrowError> {
         let batch = build_bam_batch(&records)?;
-        Ok(Self { records: Some(records), batch })
+        Ok(Self {
+            records: Some(records),
+            batch,
+        })
     }
 }
 
@@ -123,19 +127,28 @@ impl PyBamRecordBatch {
     #[staticmethod]
     fn from_arrow(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
         let batch = pyarrow_to_batch(py, obj)?;
-        Ok(Self { records: None, batch })
+        Ok(Self {
+            records: None,
+            batch,
+        })
     }
 
     // polars.DataFrame also supports __arrow_c_stream__, so pass directly.
     #[staticmethod]
     fn from_polars(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
         let batch = pyarrow_to_batch(py, obj)?;
-        Ok(Self { records: None, batch })
+        Ok(Self {
+            records: None,
+            batch,
+        })
     }
 
     #[staticmethod]
     fn from_pandas(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pandas_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pandas_to_batch(py, obj)?,
+        })
     }
 
     fn to_arrow<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -156,9 +169,12 @@ impl PyBamRecordBatch {
 
     fn to_iterator(&self) -> PyResult<PyBamBatchIterator> {
         match &self.records {
-            Some(recs) => Ok(PyBamBatchIterator { records: recs.clone(), pos: 0 }),
+            Some(recs) => Ok(PyBamBatchIterator {
+                records: recs.clone(),
+                pos: 0,
+            }),
             None => Err(PyIOError::new_err(
-                "to_iterator() is not available on a RecordBatch created from external data (from_arrow/from_polars/from_pandas)"
+                "to_iterator() is not available on a RecordBatch created from external data (from_arrow/from_polars/from_pandas)",
             )),
         }
     }
@@ -168,7 +184,10 @@ impl PyBamRecordBatch {
     }
 
     fn __repr__(&self) -> String {
-        format!("RecordBatch(<{} records, 11 columns>)", self.batch.num_rows())
+        format!(
+            "RecordBatch(<{} records, 11 columns>)",
+            self.batch.num_rows()
+        )
     }
 }
 

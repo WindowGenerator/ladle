@@ -4,19 +4,21 @@ use arrow::array::{
     Array, BooleanBuilder, Float32Builder, Int32Builder, LargeStringBuilder, RecordBatch,
 };
 use arrow::datatypes::{DataType, Field, Schema};
+use noodles::vcf::header::record::value::map::info::Type as InfoType;
 use noodles::vcf::variant::record::AlternateBases as _;
 use noodles::vcf::variant::record::Ids as _;
 use noodles::vcf::variant::record::Info as _;
 use noodles::vcf::variant::record::ReferenceBases as _;
-use noodles::vcf::variant::record::samples::Sample as VcfSample;
 use noodles::vcf::variant::record::Samples as VcfSamples;
-use noodles::vcf::header::record::value::map::info::Type as InfoType;
-use pyo3::exceptions::{PyImportError, PyIOError};
+use noodles::vcf::variant::record::samples::Sample as VcfSample;
+use pyo3::exceptions::{PyIOError, PyImportError};
 use pyo3::prelude::*;
 
-use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
-use crate::io::vcf::schema::{info_array_to_string, info_type_to_arrow, sample_value_to_string, vcf_base_schema};
 use super::record::PyRecord;
+use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
+use crate::io::vcf::schema::{
+    info_array_to_string, info_type_to_arrow, sample_value_to_string, vcf_base_schema,
+};
 
 fn build_bcf_schema_with_header(header: &noodles::vcf::Header) -> Arc<Schema> {
     let mut fields = vcf_base_schema();
@@ -41,15 +43,15 @@ fn build_bcf_batch_with_header(
     let schema = build_bcf_schema_with_header(header);
 
     let info_keys: Vec<String> = header.infos().keys().cloned().collect();
-    let fmt_keys: Vec<String>  = header.formats().keys().cloned().collect();
+    let fmt_keys: Vec<String> = header.formats().keys().cloned().collect();
     let n_samples = header.sample_names().len();
 
-    let mut chroms    = LargeStringBuilder::with_capacity(n, n * 5);
+    let mut chroms = LargeStringBuilder::with_capacity(n, n * 5);
     let mut positions = Int32Builder::with_capacity(n);
-    let mut ids       = LargeStringBuilder::with_capacity(n, n * 5);
-    let mut refs      = LargeStringBuilder::with_capacity(n, n * 4);
-    let mut alts      = LargeStringBuilder::with_capacity(n, n * 4);
-    let mut quals     = Float32Builder::with_capacity(n);
+    let mut ids = LargeStringBuilder::with_capacity(n, n * 5);
+    let mut refs = LargeStringBuilder::with_capacity(n, n * 4);
+    let mut alts = LargeStringBuilder::with_capacity(n, n * 4);
+    let mut quals = Float32Builder::with_capacity(n);
 
     enum InfoBuilder {
         Int(Int32Builder),
@@ -58,17 +60,22 @@ fn build_bcf_batch_with_header(
         Str(LargeStringBuilder),
     }
 
-    let mut info_builders: Vec<InfoBuilder> = header.infos().values().map(|m| {
-        match m.ty() {
+    let mut info_builders: Vec<InfoBuilder> = header
+        .infos()
+        .values()
+        .map(|m| match m.ty() {
             InfoType::Integer => InfoBuilder::Int(Int32Builder::with_capacity(n)),
-            InfoType::Float   => InfoBuilder::Float(Float32Builder::with_capacity(n)),
-            InfoType::Flag    => InfoBuilder::Bool(BooleanBuilder::with_capacity(n)),
-            _                 => InfoBuilder::Str(LargeStringBuilder::with_capacity(n, n * 8)),
-        }
-    }).collect();
+            InfoType::Float => InfoBuilder::Float(Float32Builder::with_capacity(n)),
+            InfoType::Flag => InfoBuilder::Bool(BooleanBuilder::with_capacity(n)),
+            _ => InfoBuilder::Str(LargeStringBuilder::with_capacity(n, n * 8)),
+        })
+        .collect();
 
     let mut fmt_builders: Vec<LargeStringBuilder> = if n_samples > 0 {
-        fmt_keys.iter().map(|_| LargeStringBuilder::with_capacity(n, n * n_samples * 4)).collect()
+        fmt_keys
+            .iter()
+            .map(|_| LargeStringBuilder::with_capacity(n, n * n_samples * 4))
+            .collect()
     } else {
         vec![]
     };
@@ -77,38 +84,56 @@ fn build_bcf_batch_with_header(
         // chrom — needs string_maps from header
         match rec.reference_sequence_name(header.string_maps()) {
             Ok(name) => chroms.append_value(name),
-            Err(_)   => chroms.append_value(""),
+            Err(_) => chroms.append_value(""),
         }
 
         match rec.variant_start() {
-            None          => positions.append_null(),
+            None => positions.append_null(),
             Some(Ok(pos)) => positions.append_value(pos.get() as i32),
-            Some(Err(_))  => positions.append_null(),
+            Some(Err(_)) => positions.append_null(),
         }
 
         let id_vec: Vec<String> = rec.ids().iter().map(|s| s.to_string()).collect();
-        if id_vec.is_empty() { ids.append_null(); } else { ids.append_value(id_vec.join(";")); }
+        if id_vec.is_empty() {
+            ids.append_null();
+        } else {
+            ids.append_value(id_vec.join(";"));
+        }
 
         // ref bases
         {
-            let bases: Vec<u8> = rec.reference_bases().iter()
-                .filter_map(|r| r.ok()).collect();
+            let bases: Vec<u8> = rec
+                .reference_bases()
+                .iter()
+                .filter_map(|r| r.ok())
+                .collect();
             refs.append_value(String::from_utf8_lossy(&bases));
         }
 
         // alt bases
-        let alt_str: Vec<String> = rec.alternate_bases().iter()
-            .filter_map(|r| r.ok()).map(|s| s.to_string()).collect();
-        if alt_str.is_empty() { alts.append_null(); } else { alts.append_value(alt_str.join(",")); }
+        let alt_str: Vec<String> = rec
+            .alternate_bases()
+            .iter()
+            .filter_map(|r| r.ok())
+            .map(|s| s.to_string())
+            .collect();
+        if alt_str.is_empty() {
+            alts.append_null();
+        } else {
+            alts.append_value(alt_str.join(","));
+        }
 
         match rec.quality_score() {
             Ok(Some(v)) => quals.append_value(v),
-            _           => quals.append_null(),
+            _ => quals.append_null(),
         }
 
         // INFO columns
         let rec_info = rec.info();
-        let mut info_map: std::collections::HashMap<&str, noodles::vcf::variant::record::info::field::Value<'_>> = std::collections::HashMap::new();
+        let mut info_map: std::collections::HashMap<
+            &str,
+            noodles::vcf::variant::record::info::field::Value<'_>,
+        > = std::collections::HashMap::new();
         for result in rec_info.iter(header) {
             if let Ok((k, Some(v))) = result {
                 info_map.insert(k, v);
@@ -121,60 +146,67 @@ fn build_bcf_batch_with_header(
                 InfoBuilder::Int(b) => {
                     use noodles::vcf::variant::record::info::field::value::Array as InfoArray;
                     match val {
-                        Some(noodles::vcf::variant::record::info::field::Value::Integer(v)) => b.append_value(*v),
-                        Some(noodles::vcf::variant::record::info::field::Value::Array(InfoArray::Integer(arr))) => {
-                            match arr.iter().next().and_then(|r| r.ok()).flatten() {
-                                Some(v) => b.append_value(v),
-                                None    => b.append_null(),
-                            }
+                        Some(noodles::vcf::variant::record::info::field::Value::Integer(v)) => {
+                            b.append_value(*v)
                         }
+                        Some(noodles::vcf::variant::record::info::field::Value::Array(
+                            InfoArray::Integer(arr),
+                        )) => match arr.iter().next().and_then(|r| r.ok()).flatten() {
+                            Some(v) => b.append_value(v),
+                            None => b.append_null(),
+                        },
                         _ => b.append_null(),
                     }
                 }
                 InfoBuilder::Float(b) => {
                     use noodles::vcf::variant::record::info::field::value::Array as InfoArray;
                     match val {
-                        Some(noodles::vcf::variant::record::info::field::Value::Float(v)) => b.append_value(*v),
-                        Some(noodles::vcf::variant::record::info::field::Value::Array(InfoArray::Float(arr))) => {
-                            match arr.iter().next().and_then(|r| r.ok()).flatten() {
-                                Some(v) => b.append_value(v),
-                                None    => b.append_null(),
-                            }
+                        Some(noodles::vcf::variant::record::info::field::Value::Float(v)) => {
+                            b.append_value(*v)
                         }
+                        Some(noodles::vcf::variant::record::info::field::Value::Array(
+                            InfoArray::Float(arr),
+                        )) => match arr.iter().next().and_then(|r| r.ok()).flatten() {
+                            Some(v) => b.append_value(v),
+                            None => b.append_null(),
+                        },
                         _ => b.append_null(),
                     }
                 }
-                InfoBuilder::Bool(b) => {
-                    match val {
-                        Some(noodles::vcf::variant::record::info::field::Value::Flag) => b.append_value(true),
-                        _ => b.append_value(false),
+                InfoBuilder::Bool(b) => match val {
+                    Some(noodles::vcf::variant::record::info::field::Value::Flag) => {
+                        b.append_value(true)
                     }
-                }
-                InfoBuilder::Str(b) => {
-                    match val {
-                        Some(noodles::vcf::variant::record::info::field::Value::String(s)) => b.append_value(s.as_ref()),
-                        Some(noodles::vcf::variant::record::info::field::Value::Character(c)) => {
-                            b.append_value(c.to_string());
-                        }
-                        Some(noodles::vcf::variant::record::info::field::Value::Array(arr)) => {
-                            b.append_value(info_array_to_string(arr));
-                        }
-                        _ => b.append_null(),
+                    _ => b.append_value(false),
+                },
+                InfoBuilder::Str(b) => match val {
+                    Some(noodles::vcf::variant::record::info::field::Value::String(s)) => {
+                        b.append_value(s.as_ref())
                     }
-                }
+                    Some(noodles::vcf::variant::record::info::field::Value::Character(c)) => {
+                        b.append_value(c.to_string());
+                    }
+                    Some(noodles::vcf::variant::record::info::field::Value::Array(arr)) => {
+                        b.append_value(info_array_to_string(arr));
+                    }
+                    _ => b.append_null(),
+                },
             }
         }
 
         // FORMAT columns — collect per-field tab-joined strings
         if n_samples > 0 && !fmt_keys.is_empty() {
             // fmt_cell[fmt_idx] accumulates one string per sample for this record
-            let mut fmt_cell: Vec<Vec<String>> = fmt_keys.iter()
+            let mut fmt_cell: Vec<Vec<String>> = fmt_keys
+                .iter()
                 .map(|_| Vec::with_capacity(n_samples))
                 .collect();
 
             if let Ok(samples_data) = rec.samples() {
                 for (sample_idx, sample) in VcfSamples::iter(&samples_data).enumerate() {
-                    if sample_idx >= n_samples { break; }
+                    if sample_idx >= n_samples {
+                        break;
+                    }
                     for (fmt_idx, fmt_key) in fmt_keys.iter().enumerate() {
                         let s = match VcfSample::get(&sample, header, fmt_key.as_str()) {
                             Some(Ok(Some(v))) => sample_value_to_string(v),
@@ -206,10 +238,10 @@ fn build_bcf_batch_with_header(
 
     for b in info_builders {
         columns.push(match b {
-            InfoBuilder::Int(mut b)   => Arc::new(b.finish()),
+            InfoBuilder::Int(mut b) => Arc::new(b.finish()),
             InfoBuilder::Float(mut b) => Arc::new(b.finish()),
-            InfoBuilder::Bool(mut b)  => Arc::new(b.finish()),
-            InfoBuilder::Str(mut b)   => Arc::new(b.finish()),
+            InfoBuilder::Bool(mut b) => Arc::new(b.finish()),
+            InfoBuilder::Str(mut b) => Arc::new(b.finish()),
         });
     }
 
@@ -236,7 +268,10 @@ impl PyBcfRecordBatch {
         header: &noodles::vcf::Header,
     ) -> Result<Self, arrow::error::ArrowError> {
         let batch = build_bcf_batch_with_header(&records, header)?;
-        Ok(Self { records: Some(records), batch })
+        Ok(Self {
+            records: Some(records),
+            batch,
+        })
     }
 }
 
@@ -244,17 +279,26 @@ impl PyBcfRecordBatch {
 impl PyBcfRecordBatch {
     #[staticmethod]
     fn from_arrow(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pyarrow_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pyarrow_to_batch(py, obj)?,
+        })
     }
 
     #[staticmethod]
     fn from_polars(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pyarrow_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pyarrow_to_batch(py, obj)?,
+        })
     }
 
     #[staticmethod]
     fn from_pandas(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pandas_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pandas_to_batch(py, obj)?,
+        })
     }
 
     fn to_arrow<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -275,9 +319,12 @@ impl PyBcfRecordBatch {
 
     fn to_iterator(&self) -> PyResult<PyBcfBatchIterator> {
         match &self.records {
-            Some(recs) => Ok(PyBcfBatchIterator { records: recs.clone(), pos: 0 }),
+            Some(recs) => Ok(PyBcfBatchIterator {
+                records: recs.clone(),
+                pos: 0,
+            }),
             None => Err(PyIOError::new_err(
-                "to_iterator() is not available on a RecordBatch created from external data (from_arrow/from_polars/from_pandas)"
+                "to_iterator() is not available on a RecordBatch created from external data (from_arrow/from_polars/from_pandas)",
             )),
         }
     }
@@ -287,7 +334,11 @@ impl PyBcfRecordBatch {
     }
 
     fn __repr__(&self) -> String {
-        format!("RecordBatch(<{} records, {} columns>)", self.batch.num_rows(), self.batch.num_columns())
+        format!(
+            "RecordBatch(<{} records, {} columns>)",
+            self.batch.num_rows(),
+            self.batch.num_columns()
+        )
     }
 }
 

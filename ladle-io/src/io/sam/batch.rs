@@ -1,65 +1,66 @@
 use std::sync::Arc;
 
-use bstr::ByteSlice;
 use arrow::array::{
-    Array, Int32Builder, LargeBinaryBuilder, UInt8Builder, UInt16Builder,
-    RecordBatch,
+    Array, Int32Builder, LargeBinaryBuilder, RecordBatch, UInt8Builder, UInt16Builder,
 };
 use arrow::datatypes::{DataType, Field, Schema};
-use pyo3::exceptions::{PyImportError, PyIOError};
+use bstr::ByteSlice;
+use pyo3::exceptions::{PyIOError, PyImportError};
 use pyo3::prelude::*;
 
-use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
 use super::record::PyRecord;
+use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
 
 fn sam_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
-        Field::new("name",                         DataType::LargeBinary, true),
-        Field::new("flags",                        DataType::UInt16,      false),
-        Field::new("reference_sequence_name",      DataType::LargeBinary, true),
-        Field::new("alignment_start",              DataType::Int32,       true),
-        Field::new("mapping_quality",              DataType::UInt8,       true),
-        Field::new("cigar",                        DataType::LargeBinary, false),
+        Field::new("name", DataType::LargeBinary, true),
+        Field::new("flags", DataType::UInt16, false),
+        Field::new("reference_sequence_name", DataType::LargeBinary, true),
+        Field::new("alignment_start", DataType::Int32, true),
+        Field::new("mapping_quality", DataType::UInt8, true),
+        Field::new("cigar", DataType::LargeBinary, false),
         Field::new("mate_reference_sequence_name", DataType::LargeBinary, true),
-        Field::new("mate_alignment_start",         DataType::Int32,       true),
-        Field::new("template_length",              DataType::Int32,       false),
-        Field::new("sequence",                     DataType::LargeBinary, false),
-        Field::new("quality_scores",               DataType::LargeBinary, false),
+        Field::new("mate_alignment_start", DataType::Int32, true),
+        Field::new("template_length", DataType::Int32, false),
+        Field::new("sequence", DataType::LargeBinary, false),
+        Field::new("quality_scores", DataType::LargeBinary, false),
     ]))
 }
 
-fn build_sam_batch(records: &[noodles::sam::Record]) -> Result<RecordBatch, arrow::error::ArrowError> {
+fn build_sam_batch(
+    records: &[noodles::sam::Record],
+) -> Result<RecordBatch, arrow::error::ArrowError> {
     let n = records.len();
-    let mut names        = LargeBinaryBuilder::with_capacity(n, n * 10);
-    let mut flags        = UInt16Builder::with_capacity(n);
-    let mut ref_names    = LargeBinaryBuilder::with_capacity(n, n * 5);
-    let mut aln_starts   = Int32Builder::with_capacity(n);
-    let mut mapqs        = UInt8Builder::with_capacity(n);
-    let mut cigars       = LargeBinaryBuilder::with_capacity(n, n * 8);
-    let mut mate_refs    = LargeBinaryBuilder::with_capacity(n, n * 5);
-    let mut mate_alns    = Int32Builder::with_capacity(n);
-    let mut tlen         = Int32Builder::with_capacity(n);
-    let mut seqs         = LargeBinaryBuilder::with_capacity(n, n * 150);
-    let mut quals        = LargeBinaryBuilder::with_capacity(n, n * 150);
+    let mut names = LargeBinaryBuilder::with_capacity(n, n * 10);
+    let mut flags = UInt16Builder::with_capacity(n);
+    let mut ref_names = LargeBinaryBuilder::with_capacity(n, n * 5);
+    let mut aln_starts = Int32Builder::with_capacity(n);
+    let mut mapqs = UInt8Builder::with_capacity(n);
+    let mut cigars = LargeBinaryBuilder::with_capacity(n, n * 8);
+    let mut mate_refs = LargeBinaryBuilder::with_capacity(n, n * 5);
+    let mut mate_alns = Int32Builder::with_capacity(n);
+    let mut tlen = Int32Builder::with_capacity(n);
+    let mut seqs = LargeBinaryBuilder::with_capacity(n, n * 150);
+    let mut quals = LargeBinaryBuilder::with_capacity(n, n * 150);
 
     for rec in records {
         names.append_option(rec.name().map(|n| n.as_bytes()));
 
         match rec.flags() {
-            Ok(f)  => flags.append_value(u16::from(f)),
+            Ok(f) => flags.append_value(u16::from(f)),
             Err(_) => flags.append_value(0),
         }
 
         ref_names.append_option(rec.reference_sequence_name().map(|n| n.as_bytes()));
 
         match rec.alignment_start() {
-            None          => aln_starts.append_null(),
+            None => aln_starts.append_null(),
             Some(Ok(pos)) => aln_starts.append_value(pos.get() as i32),
-            Some(Err(_))  => aln_starts.append_null(),
+            Some(Err(_)) => aln_starts.append_null(),
         }
 
         match rec.mapping_quality() {
-            None         => mapqs.append_null(),
+            None => mapqs.append_null(),
             Some(Ok(mq)) => mapqs.append_value(mq.get()),
             Some(Err(_)) => mapqs.append_null(),
         }
@@ -69,13 +70,13 @@ fn build_sam_batch(records: &[noodles::sam::Record]) -> Result<RecordBatch, arro
         mate_refs.append_option(rec.mate_reference_sequence_name().map(|n| n.as_bytes()));
 
         match rec.mate_alignment_start() {
-            None          => mate_alns.append_null(),
+            None => mate_alns.append_null(),
             Some(Ok(pos)) => mate_alns.append_value(pos.get() as i32),
-            Some(Err(_))  => mate_alns.append_null(),
+            Some(Err(_)) => mate_alns.append_null(),
         }
 
         match rec.template_length() {
-            Ok(v)  => tlen.append_value(v),
+            Ok(v) => tlen.append_value(v),
             Err(_) => tlen.append_value(0),
         }
 
@@ -113,7 +114,10 @@ pub struct PySamRecordBatch {
 impl PySamRecordBatch {
     pub fn try_new(records: Vec<noodles::sam::Record>) -> Result<Self, arrow::error::ArrowError> {
         let batch = build_sam_batch(&records)?;
-        Ok(Self { records: Some(records), batch })
+        Ok(Self {
+            records: Some(records),
+            batch,
+        })
     }
 }
 
@@ -121,17 +125,26 @@ impl PySamRecordBatch {
 impl PySamRecordBatch {
     #[staticmethod]
     fn from_arrow(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pyarrow_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pyarrow_to_batch(py, obj)?,
+        })
     }
 
     #[staticmethod]
     fn from_polars(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pyarrow_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pyarrow_to_batch(py, obj)?,
+        })
     }
 
     #[staticmethod]
     fn from_pandas(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pandas_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pandas_to_batch(py, obj)?,
+        })
     }
 
     fn to_arrow<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -152,9 +165,12 @@ impl PySamRecordBatch {
 
     fn to_iterator(&self) -> PyResult<PySamBatchIterator> {
         match &self.records {
-            Some(recs) => Ok(PySamBatchIterator { records: recs.clone(), pos: 0 }),
+            Some(recs) => Ok(PySamBatchIterator {
+                records: recs.clone(),
+                pos: 0,
+            }),
             None => Err(PyIOError::new_err(
-                "to_iterator() is not available on a RecordBatch created from external data (from_arrow/from_polars/from_pandas)"
+                "to_iterator() is not available on a RecordBatch created from external data (from_arrow/from_polars/from_pandas)",
             )),
         }
     }
@@ -164,7 +180,10 @@ impl PySamRecordBatch {
     }
 
     fn __repr__(&self) -> String {
-        format!("RecordBatch(<{} records, 11 columns>)", self.batch.num_rows())
+        format!(
+            "RecordBatch(<{} records, 11 columns>)",
+            self.batch.num_rows()
+        )
     }
 }
 

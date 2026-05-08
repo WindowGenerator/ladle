@@ -1,15 +1,14 @@
 use bstr::ByteSlice;
-use noodles::sam::alignment::record::Cigar as CigarTrait;
-use noodles::sam::alignment::record::data::field::value::Array;
-use noodles::sam::alignment::record::data::field::Value;
 use noodles::sam::Record;
+use noodles::sam::alignment::record::data::field::Value;
+use noodles::sam::alignment::record::data::field::value::Array;
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict, PyList};
 
-use crate::io::core::PyPosition;
 use super::flags::PyFlags;
 use super::mapping_quality::PyMappingQuality;
+use crate::io::core::PyPosition;
 
 #[pyclass(name = "Record", module = "ladle.sam", from_py_object)]
 #[derive(Clone)]
@@ -36,10 +35,7 @@ impl PyRecord {
             .map_err(|e| PyIOError::new_err(e.to_string()))
     }
 
-    fn reference_sequence_name<'py>(
-        &self,
-        py: Python<'py>,
-    ) -> Option<pyo3::Bound<'py, PyBytes>> {
+    fn reference_sequence_name<'py>(&self, py: Python<'py>) -> Option<pyo3::Bound<'py, PyBytes>> {
         self.inner
             .reference_sequence_name()
             .map(|n| PyBytes::new(py, n.as_bytes()))

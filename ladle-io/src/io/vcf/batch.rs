@@ -1,10 +1,10 @@
 use arrow::array::RecordBatch;
-use pyo3::exceptions::{PyImportError, PyIOError};
+use pyo3::exceptions::{PyIOError, PyImportError};
 use pyo3::prelude::*;
 
-use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
 use super::record::PyRecord;
 use super::schema::{build_vcf_batch, build_vcf_batch_with_header};
+use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
 
 // ---------------------------------------------------------------------------
 // PyVcfRecordBatch
@@ -19,7 +19,10 @@ pub struct PyVcfRecordBatch {
 impl PyVcfRecordBatch {
     pub fn try_new(records: Vec<noodles::vcf::Record>) -> Result<Self, arrow::error::ArrowError> {
         let batch = build_vcf_batch(&records)?;
-        Ok(Self { records: Some(records), batch })
+        Ok(Self {
+            records: Some(records),
+            batch,
+        })
     }
 
     pub fn try_new_with_header(
@@ -27,7 +30,10 @@ impl PyVcfRecordBatch {
         header: &noodles::vcf::Header,
     ) -> Result<Self, arrow::error::ArrowError> {
         let batch = build_vcf_batch_with_header(&records, header)?;
-        Ok(Self { records: Some(records), batch })
+        Ok(Self {
+            records: Some(records),
+            batch,
+        })
     }
 }
 
@@ -35,17 +41,26 @@ impl PyVcfRecordBatch {
 impl PyVcfRecordBatch {
     #[staticmethod]
     fn from_arrow(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pyarrow_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pyarrow_to_batch(py, obj)?,
+        })
     }
 
     #[staticmethod]
     fn from_polars(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pyarrow_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pyarrow_to_batch(py, obj)?,
+        })
     }
 
     #[staticmethod]
     fn from_pandas(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
-        Ok(Self { records: None, batch: pandas_to_batch(py, obj)? })
+        Ok(Self {
+            records: None,
+            batch: pandas_to_batch(py, obj)?,
+        })
     }
 
     fn to_arrow<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
@@ -66,9 +81,12 @@ impl PyVcfRecordBatch {
 
     fn to_iterator(&self) -> PyResult<PyVcfBatchIterator> {
         match &self.records {
-            Some(recs) => Ok(PyVcfBatchIterator { records: recs.clone(), pos: 0 }),
+            Some(recs) => Ok(PyVcfBatchIterator {
+                records: recs.clone(),
+                pos: 0,
+            }),
             None => Err(PyIOError::new_err(
-                "to_iterator() is not available on a RecordBatch created from external data (from_arrow/from_polars/from_pandas)"
+                "to_iterator() is not available on a RecordBatch created from external data (from_arrow/from_polars/from_pandas)",
             )),
         }
     }
@@ -78,7 +96,11 @@ impl PyVcfRecordBatch {
     }
 
     fn __repr__(&self) -> String {
-        format!("RecordBatch(<{} records, {} columns>)", self.batch.num_rows(), self.batch.num_columns())
+        format!(
+            "RecordBatch(<{} records, {} columns>)",
+            self.batch.num_rows(),
+            self.batch.num_columns()
+        )
     }
 }
 
