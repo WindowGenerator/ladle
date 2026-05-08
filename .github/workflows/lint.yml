@@ -1,0 +1,42 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff — check Python
+        run: ruff check python/ tests/
+
+      - name: cargo fmt — ladle-io
+        run: cargo fmt --check --manifest-path ladle-io/Cargo.toml
+
+      - name: cargo fmt — ladle-ops
+        run: cargo fmt --check --manifest-path ladle-ops/Cargo.toml
+
+      - name: cargo clippy — ladle-io
+        run: cargo clippy --manifest-path ladle-io/Cargo.toml -- -D warnings
+
+      - name: cargo clippy — ladle-ops
+        run: cargo clippy --manifest-path ladle-ops/Cargo.toml -- -D warnings
