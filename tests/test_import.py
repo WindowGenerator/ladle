@@ -6,5 +6,19 @@ def test_version():
 
 
 def test_submodules():
-    for name in ("bam", "bgzf", "core", "sam"):
+    import importlib
+
+    for name in ("io", "ops"):
         assert hasattr(ladle, name)
+
+    for dotted in (
+        "ladle.io.bam",
+        "ladle.io.bcf",
+        "ladle.io.bgzf",
+        "ladle.io.core",
+        "ladle.io.fastq",
+        "ladle.io.sam",
+        "ladle.io.vcf",
+        "ladle.ops.intervals",
+    ):
+        assert importlib.import_module(dotted) is not None
