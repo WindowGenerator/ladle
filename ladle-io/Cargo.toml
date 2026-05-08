@@ -1,0 +1,18 @@
+[package]
+name        = "ladle-io"
+version     = "0.1.0"
+edition     = "2024"
+rust-version = "1.88"
+license     = "MIT"
+
+[lib]
+name        = "_ladle_io"
+crate-type  = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3        = { workspace = true }
+arrow       = { workspace = true }
+arrow-array = { workspace = true }
+noodles     = { version = "0.109", features = ["bam", "bcf", "fastq", "sam", "bgzf", "core", "vcf"] }
+bstr        = "1"
+libc        = "0.2"

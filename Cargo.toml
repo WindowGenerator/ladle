@@ -1,0 +1,13 @@
+[workspace]
+members = ["ladle-io", "ladle-ops"]
+resolver = "2"
+
+[workspace.dependencies]
+pyo3        = { version = "0.28", features = [] }
+arrow       = { version = "58", default-features = false, features = ["ffi"] }
+arrow-array = { version = "58", default-features = false }
+
+[profile.release]
+lto           = "thin"
+codegen-units = 1
+opt-level     = 3

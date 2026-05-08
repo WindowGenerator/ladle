@@ -1,0 +1,17 @@
+[package]
+name        = "ladle-ops"
+version     = "0.1.0"
+edition     = "2024"
+rust-version = "1.88"
+license     = "MIT"
+
+[lib]
+name        = "_ladle_ops"
+crate-type  = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3        = { workspace = true }
+arrow       = { workspace = true }
+arrow-array = { workspace = true }
+coitrees    = { version = "0.4", default-features = false }
+rayon       = { version = "1" }
