@@ -10,15 +10,9 @@ from ladle.io.sam import Flags, Header, MappingQuality, Reader as SamReader
 # Shared fixtures / helpers
 # ---------------------------------------------------------------------------
 
-HEADER_TEXT = (
-    "@HD\tVN:1.6\tSO:coordinate\n"
-    "@SQ\tSN:chr1\tLN:248956422\n"
-    "@SQ\tSN:chr2\tLN:242193529\n"
-)
+HEADER_TEXT = "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:248956422\n@SQ\tSN:chr2\tLN:242193529\n"
 
-RECORD_LINE = (
-    "read1\t0\tchr1\t100\t60\t5M\t*\t0\t0\tACGTA\tIIIII\tNM:i:0\tAS:i:100\n"
-)
+RECORD_LINE = "read1\t0\tchr1\t100\t60\t5M\t*\t0\t0\tACGTA\tIIIII\tNM:i:0\tAS:i:100\n"
 
 SAM_TEXT = HEADER_TEXT + RECORD_LINE
 
@@ -69,6 +63,7 @@ class TestImports:
 
     def test_bai_submodule(self):
         import ladle.io.bam as bam_mod
+
         assert hasattr(bam_mod, "bai")
         assert hasattr(bam_mod.bai, "Index")
 
@@ -110,8 +105,7 @@ class TestReaderWriter:
     def test_multiple_records(self, tmp_path):
         n = 5
         lines = "".join(
-            f"read{i}\t0\tchr1\t{100 + i}\t60\t5M\t*\t0\t0\tACGTA\tIIIII\n"
-            for i in range(n)
+            f"read{i}\t0\tchr1\t{100 + i}\t60\t5M\t*\t0\t0\tACGTA\tIIIII\n" for i in range(n)
         )
         bam_path = str(tmp_path / "multi.bam")
         _write_bam_from_sam(HEADER_TEXT + lines, bam_path)
@@ -366,5 +360,6 @@ class TestReaderFromFd:
 
     def test_from_fd_no_fileno_raises(self):
         import io
+
         with pytest.raises(OSError):
             Reader.from_fd(io.BytesIO(b"not a real file"))

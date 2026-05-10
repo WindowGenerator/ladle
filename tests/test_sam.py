@@ -6,9 +6,7 @@ from ladle.io.sam import Flags, Header, MappingQuality, Reader, Writer
 # ---------------------------------------------------------------------------
 HEADER_TEXT = "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:248956422\n@SQ\tSN:chr2\tLN:242193529\n"
 
-RECORD_LINE = (
-    "read1\t0\tchr1\t100\t60\t5M\t*\t0\t0\tACGTA\tIIIII\tNM:i:0\tAS:i:100\n"
-)
+RECORD_LINE = "read1\t0\tchr1\t100\t60\t5M\t*\t0\t0\tACGTA\tIIIII\tNM:i:0\tAS:i:100\n"
 
 SAM_TEXT = HEADER_TEXT + RECORD_LINE
 
@@ -218,8 +216,7 @@ class TestReaderWriter:
 
     def test_multiple_records(self, tmp_path):
         records_text = "".join(
-            f"read{i}\t0\tchr1\t{100 + i}\t60\t5M\t*\t0\t0\tACGTA\tIIIII\n"
-            for i in range(5)
+            f"read{i}\t0\tchr1\t{100 + i}\t60\t5M\t*\t0\t0\tACGTA\tIIIII\n" for i in range(5)
         )
         path = str(tmp_path / "multi.sam")
         with open(path, "w") as f:

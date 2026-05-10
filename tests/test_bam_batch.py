@@ -10,15 +10,10 @@ from ladle.io.sam import Header, Reader as SamReader
 # Helpers
 # ---------------------------------------------------------------------------
 
-HEADER_TEXT = (
-    "@HD\tVN:1.6\tSO:coordinate\n"
-    "@SQ\tSN:chr1\tLN:248956422\n"
-    "@SQ\tSN:chr2\tLN:242193529\n"
-)
+HEADER_TEXT = "@HD\tVN:1.6\tSO:coordinate\n@SQ\tSN:chr1\tLN:248956422\n@SQ\tSN:chr2\tLN:242193529\n"
 
 RECORDS_TEXT = "".join(
-    f"read{i}\t0\tchr1\t{100 + i}\t60\t5M\t*\t0\t0\tACGTA\tIIIII\n"
-    for i in range(5)
+    f"read{i}\t0\tchr1\t{100 + i}\t60\t5M\t*\t0\t0\tACGTA\tIIIII\n" for i in range(5)
 )
 
 SAM_TEXT = HEADER_TEXT + RECORDS_TEXT
@@ -61,6 +56,7 @@ def batch(bam_path):
 # Module-level checks
 # ---------------------------------------------------------------------------
 
+
 class TestImports:
     def test_record_batch_class_exists(self):
         assert RecordBatch
@@ -70,12 +66,14 @@ class TestImports:
 
     def test_recordbatch_accessible_from_io_bam(self):
         import ladle.io.bam as io_bam
+
         assert io_bam.RecordBatch is RecordBatch
 
 
 # ---------------------------------------------------------------------------
 # RecordBatch basic
 # ---------------------------------------------------------------------------
+
 
 class TestRecordBatch:
     def test_type(self, batch):
@@ -110,6 +108,7 @@ class TestRecordBatch:
 # to_arrow
 # ---------------------------------------------------------------------------
 
+
 class TestToArrow:
     def test_returns_record_batch(self, batch):
         pa = pytest.importorskip("pyarrow")
@@ -123,10 +122,19 @@ class TestToArrow:
     def test_schema_field_names(self, batch):
         pytest.importorskip("pyarrow")
         names = batch.to_arrow().schema.names
-        for field in ("name", "flags", "reference_sequence_id", "alignment_start",
-                      "mapping_quality", "cigar", "mate_reference_sequence_id",
-                      "mate_alignment_start", "template_length", "sequence",
-                      "quality_scores"):
+        for field in (
+            "name",
+            "flags",
+            "reference_sequence_id",
+            "alignment_start",
+            "mapping_quality",
+            "cigar",
+            "mate_reference_sequence_id",
+            "mate_alignment_start",
+            "template_length",
+            "sequence",
+            "quality_scores",
+        ):
             assert field in names
 
     def test_flags_type(self, batch):
@@ -187,15 +195,21 @@ class TestToArrow:
     def test_nullable_fields_declared_nullable(self, batch):
         pytest.importorskip("pyarrow")
         schema = batch.to_arrow().schema
-        for nullable_field in ("name", "reference_sequence_id", "alignment_start",
-                               "mapping_quality", "mate_reference_sequence_id",
-                               "mate_alignment_start"):
+        for nullable_field in (
+            "name",
+            "reference_sequence_id",
+            "alignment_start",
+            "mapping_quality",
+            "mate_reference_sequence_id",
+            "mate_alignment_start",
+        ):
             assert schema.field(nullable_field).nullable
 
 
 # ---------------------------------------------------------------------------
 # to_iterator
 # ---------------------------------------------------------------------------
+
 
 class TestToIterator:
     def test_yields_records(self, batch):
@@ -232,6 +246,7 @@ class TestToIterator:
 # to_polars
 # ---------------------------------------------------------------------------
 
+
 class TestToPolars:
     def test_returns_dataframe(self, batch):
         pl = pytest.importorskip("polars")
@@ -253,6 +268,7 @@ class TestToPolars:
 # to_pandas
 # ---------------------------------------------------------------------------
 
+
 class TestToPandas:
     def test_returns_dataframe(self, batch):
         pytest.importorskip("pyarrow")
@@ -269,6 +285,7 @@ class TestToPandas:
 # ---------------------------------------------------------------------------
 # from_arrow
 # ---------------------------------------------------------------------------
+
 
 class TestFromArrow:
     def test_round_trip_len(self, batch):
@@ -316,6 +333,7 @@ class TestFromArrow:
 # from_polars
 # ---------------------------------------------------------------------------
 
+
 class TestFromPolars:
     def test_round_trip_len(self, batch):
         pytest.importorskip("polars")
@@ -344,6 +362,7 @@ class TestFromPolars:
 # ---------------------------------------------------------------------------
 # from_pandas
 # ---------------------------------------------------------------------------
+
 
 class TestFromPandas:
     def test_round_trip_len(self, batch):

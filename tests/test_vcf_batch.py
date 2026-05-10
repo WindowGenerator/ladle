@@ -1,4 +1,3 @@
-
 import pytest
 
 from ladle.io.vcf import Reader, RecordBatch, RecordBatchIterator, Record
@@ -10,13 +9,12 @@ from ladle.io.vcf import Reader, RecordBatch, RecordBatchIterator, Record
 HEADER_TEXT = (
     "##fileformat=VCFv4.2\n"
     "##contig=<ID=chr1,length=248956422>\n"
-    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total depth\">\n"
+    '##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth">\n'
     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
 )
 
 RECORDS_TEXT = "".join(
-    f"chr1\t{100 + i}\trs{i}\tA\tG\t{30.0 + i}\tPASS\tDP={10 + i}\n"
-    for i in range(5)
+    f"chr1\t{100 + i}\trs{i}\tA\tG\t{30.0 + i}\tPASS\tDP={10 + i}\n" for i in range(5)
 )
 
 VCF_TEXT = HEADER_TEXT + RECORDS_TEXT
@@ -51,6 +49,7 @@ def batch(vcf_path):
 # Module-level checks
 # ---------------------------------------------------------------------------
 
+
 class TestImports:
     def test_record_batch_class_exists(self):
         assert RecordBatch
@@ -60,12 +59,14 @@ class TestImports:
 
     def test_recordbatch_accessible_from_io_vcf(self):
         import ladle.io.vcf as io_vcf
+
         assert io_vcf.RecordBatch is RecordBatch
 
 
 # ---------------------------------------------------------------------------
 # RecordBatch basic
 # ---------------------------------------------------------------------------
+
 
 class TestRecordBatch:
     def test_type(self, batch):
@@ -91,6 +92,7 @@ class TestRecordBatch:
 # ---------------------------------------------------------------------------
 # to_arrow
 # ---------------------------------------------------------------------------
+
 
 class TestToArrow:
     def test_returns_record_batch(self, batch):
@@ -205,6 +207,7 @@ class TestToArrow:
 # to_iterator
 # ---------------------------------------------------------------------------
 
+
 class TestToIterator:
     def test_yields_records(self, batch):
         records = list(batch.to_iterator())
@@ -238,6 +241,7 @@ class TestToIterator:
 # to_polars
 # ---------------------------------------------------------------------------
 
+
 class TestToPolars:
     def test_returns_dataframe(self, batch):
         pl = pytest.importorskip("polars")
@@ -259,6 +263,7 @@ class TestToPolars:
 # to_pandas
 # ---------------------------------------------------------------------------
 
+
 class TestToPandas:
     def test_returns_dataframe(self, batch):
         pytest.importorskip("pyarrow")
@@ -275,6 +280,7 @@ class TestToPandas:
 # ---------------------------------------------------------------------------
 # from_arrow
 # ---------------------------------------------------------------------------
+
 
 class TestFromArrow:
     def test_round_trip_len(self, batch):
@@ -322,6 +328,7 @@ class TestFromArrow:
 # from_polars
 # ---------------------------------------------------------------------------
 
+
 class TestFromPolars:
     def test_round_trip_len(self, batch):
         pytest.importorskip("polars")
@@ -351,6 +358,7 @@ class TestFromPolars:
 # from_pandas
 # ---------------------------------------------------------------------------
 
+
 class TestFromPandas:
     def test_round_trip_len(self, batch):
         pytest.importorskip("pyarrow")
@@ -379,12 +387,12 @@ class TestFromPandas:
 INFO_FMT_HEADER = (
     "##fileformat=VCFv4.2\n"
     "##contig=<ID=chr1,length=248956422>\n"
-    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total depth\">\n"
-    "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele freq\">\n"
-    "##INFO=<ID=DB,Number=0,Type=Flag,Description=\"dbSNP\">\n"
-    "##INFO=<ID=GENE,Number=1,Type=String,Description=\"Gene name\">\n"
-    "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
-    "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype quality\">\n"
+    '##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth">\n'
+    '##INFO=<ID=AF,Number=A,Type=Float,Description="Allele freq">\n'
+    '##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP">\n'
+    '##INFO=<ID=GENE,Number=1,Type=String,Description="Gene name">\n'
+    '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
+    '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">\n'
     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE1\tSAMPLE2\n"
 )
 
@@ -532,7 +540,7 @@ class TestRecordsBatchWithHeader:
         pytest.importorskip("pyarrow")
         vcf_text = (
             "##fileformat=VCFv4.2\n"
-            "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"depth\">\n"
+            '##INFO=<ID=DP,Number=1,Type=Integer,Description="depth">\n'
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
             "chr1\t100\t.\tA\tG\t.\t.\t.\n"
         )

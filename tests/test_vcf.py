@@ -8,8 +8,8 @@ HEADER_TEXT = (
     "##fileformat=VCFv4.2\n"
     "##contig=<ID=chr1,length=248956422>\n"
     "##contig=<ID=chr2,length=242193529>\n"
-    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total depth\">\n"
-    "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele frequency\">\n"
+    '##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth">\n'
+    '##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">\n'
     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
 )
 
@@ -38,8 +38,8 @@ class TestHeader:
     def test_repr(self):
         h = Header.parse(HEADER_TEXT)
         r = repr(h)
-        assert "0" in r   # 0 samples
-        assert "2" in r   # 2 contigs
+        assert "0" in r  # 0 samples
+        assert "2" in r  # 2 contigs
 
     def test_str_roundtrip(self):
         h = Header.parse(HEADER_TEXT)
@@ -84,8 +84,8 @@ class TestHeader:
     def test_format_fields_with_formats(self):
         hdr_text = (
             "##fileformat=VCFv4.2\n"
-            "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
-            "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"GQ\">\n"
+            '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
+            '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="GQ">\n'
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\n"
         )
         h = Header.parse(hdr_text)
@@ -96,7 +96,7 @@ class TestHeader:
     def test_info_fields_flag_type(self):
         hdr_text = (
             "##fileformat=VCFv4.2\n"
-            "##INFO=<ID=DB,Number=0,Type=Flag,Description=\"dbSNP\">\n"
+            '##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP">\n'
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
         )
         h = Header.parse(hdr_text)
@@ -104,10 +104,7 @@ class TestHeader:
         assert d["DB"] == "Flag"
 
     def test_info_fields_empty(self):
-        h = Header.parse(
-            "##fileformat=VCFv4.2\n"
-            "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
-        )
+        h = Header.parse("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n")
         assert h.info_fields() == []
 
 
@@ -156,9 +153,7 @@ class TestReaderWriter:
         assert records2[0].reference_sequence_name() == "chr1"
 
     def test_multiple_records(self, tmp_path):
-        records_text = "".join(
-            f"chr1\t{100 + i}\t.\tA\tG\t.\t.\t.\n" for i in range(5)
-        )
+        records_text = "".join(f"chr1\t{100 + i}\t.\tA\tG\t.\t.\t.\n" for i in range(5))
         path = str(tmp_path / "multi.vcf")
         with open(path, "w") as f:
             f.write(HEADER_TEXT + records_text)
@@ -299,7 +294,7 @@ class TestRecord:
     def test_flag_info(self, tmp_path):
         header_text = (
             "##fileformat=VCFv4.2\n"
-            "##INFO=<ID=DB,Number=0,Type=Flag,Description=\"dbSNP membership\">\n"
+            '##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP membership">\n'
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
         )
         path = str(tmp_path / "flag.vcf")
@@ -343,5 +338,6 @@ class TestReaderFromFd:
 
     def test_from_fd_no_fileno_raises(self):
         import io
+
         with pytest.raises(OSError):
             Reader.from_fd(io.BytesIO(b"not a real file"))

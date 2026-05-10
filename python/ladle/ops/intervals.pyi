@@ -1,6 +1,5 @@
 from typing import Any
 
-
 def overlap(a: Any, b: Any) -> Any:
     """
     Find all overlapping pairs of rows between `a` and `b`.
@@ -95,7 +94,9 @@ def coverage(a: Any) -> Any:
     """
     ...
 
-def expand(a: Any, amount: int = 0, start_amount: int | None = None, end_amount: int | None = None) -> Any:
+def expand(
+    a: Any, amount: int = 0, start_amount: int | None = None, end_amount: int | None = None
+) -> Any:
     """
     Expand intervals by subtracting from start and adding to end.
 

@@ -1,15 +1,19 @@
 import pytest
 
 pa = pytest.importorskip("pyarrow")
-import ladle.ops.intervals as intervals # noqa: E402
+import ladle.ops.intervals as intervals  # noqa: E402
 
 
 def make_batch(rows, **extra):
     """rows: list of (chrom, start, end); extra: additional columns."""
     chroms = [r[0] for r in rows]
     starts = [r[1] for r in rows]
-    ends   = [r[2] for r in rows]
-    data = {"chrom": pa.array(chroms), "start": pa.array(starts, type=pa.int32()), "end": pa.array(ends, type=pa.int32())}
+    ends = [r[2] for r in rows]
+    data = {
+        "chrom": pa.array(chroms),
+        "start": pa.array(starts, type=pa.int32()),
+        "end": pa.array(ends, type=pa.int32()),
+    }
     for k, v in extra.items():
         data[k] = pa.array(v)
     return pa.record_batch(data)
@@ -18,6 +22,7 @@ def make_batch(rows, **extra):
 # ---------------------------------------------------------------------------
 # overlap
 # ---------------------------------------------------------------------------
+
 
 class TestOverlap:
     def test_basic_overlap(self):
@@ -124,8 +129,20 @@ class TestOverlap:
         assert r.num_rows == 1
 
     def test_int64_start_end(self):
-        a = pa.record_batch({"chrom": ["chr1"], "start": pa.array([0], type=pa.int64()), "end": pa.array([30], type=pa.int64())})
-        b = pa.record_batch({"chrom": ["chr1"], "start": pa.array([20], type=pa.int64()), "end": pa.array([60], type=pa.int64())})
+        a = pa.record_batch(
+            {
+                "chrom": ["chr1"],
+                "start": pa.array([0], type=pa.int64()),
+                "end": pa.array([30], type=pa.int64()),
+            }
+        )
+        b = pa.record_batch(
+            {
+                "chrom": ["chr1"],
+                "start": pa.array([20], type=pa.int64()),
+                "end": pa.array([60], type=pa.int64()),
+            }
+        )
         r = intervals.overlap(a, b)
         assert r.num_rows == 1
 
@@ -137,6 +154,7 @@ class TestOverlap:
 
     def test_large_inputs(self):
         import random
+
         rng = random.Random(42)
         n = 10_000
         rows_a = [("chr1", i * 10, i * 10 + 15) for i in range(n)]
@@ -151,6 +169,7 @@ class TestOverlap:
 # ---------------------------------------------------------------------------
 # nearest
 # ---------------------------------------------------------------------------
+
 
 class TestNearest:
     def test_overlap_distance_zero(self):
@@ -248,6 +267,7 @@ class TestNearest:
 # count_overlaps
 # ---------------------------------------------------------------------------
 
+
 class TestCountOverlaps:
     def test_basic_counts(self):
         # a row overlaps 2 b-rows, then 1, then 0
@@ -341,13 +361,14 @@ class TestCountOverlaps:
 # cluster
 # ---------------------------------------------------------------------------
 
+
 class TestCluster:
     def test_basic(self):
         a = make_batch([("chr1", 1, 5), ("chr1", 3, 8), ("chr1", 10, 15)])
         r = intervals.cluster(a)
         ids = [r["cluster_id"][i].as_py() for i in range(3)]
-        assert ids[0] == ids[1]        # first two overlap → same cluster
-        assert ids[2] != ids[0]        # third is separate
+        assert ids[0] == ids[1]  # first two overlap → same cluster
+        assert ids[2] != ids[0]  # third is separate
 
     def test_adjacent_not_merged(self):
         # [0,10) and [10,20) touch but don't overlap → separate clusters
@@ -380,6 +401,7 @@ class TestCluster:
 # ---------------------------------------------------------------------------
 # merge
 # ---------------------------------------------------------------------------
+
 
 class TestMerge:
     def test_basic(self):
@@ -422,6 +444,7 @@ class TestMerge:
 # ---------------------------------------------------------------------------
 # subtract
 # ---------------------------------------------------------------------------
+
 
 class TestSubtract:
     def test_no_overlap_kept(self):
@@ -466,12 +489,16 @@ class TestSubtract:
 # complement
 # ---------------------------------------------------------------------------
 
+
 class TestComplement:
     def test_gap_between(self):
         a = make_batch([("chr1", 10, 30), ("chr1", 50, 70)])
         r = intervals.complement(a)
         # gap between: [30, 50)
-        rows = [(r["chrom"][i].as_py(), r["start"][i].as_py(), r["end"][i].as_py()) for i in range(r.num_rows)]
+        rows = [
+            (r["chrom"][i].as_py(), r["start"][i].as_py(), r["end"][i].as_py())
+            for i in range(r.num_rows)
+        ]
         assert ("chr1", 30, 50) in rows
 
     def test_leading_gap_with_chrom_sizes(self):
@@ -501,11 +528,15 @@ class TestComplement:
 # coverage
 # ---------------------------------------------------------------------------
 
+
 class TestCoverage:
     def test_basic(self):
         a = make_batch([("chr1", 1, 5), ("chr1", 3, 8)])
         r = intervals.coverage(a)
-        depths = {(r["start"][i].as_py(), r["end"][i].as_py()): r["depth"][i].as_py() for i in range(r.num_rows)}
+        depths = {
+            (r["start"][i].as_py(), r["end"][i].as_py()): r["depth"][i].as_py()
+            for i in range(r.num_rows)
+        }
         assert depths.get((1, 3)) == 1
         assert depths.get((3, 5)) == 2
         assert depths.get((5, 8)) == 1
@@ -530,6 +561,7 @@ class TestCoverage:
 # ---------------------------------------------------------------------------
 # expand
 # ---------------------------------------------------------------------------
+
 
 class TestExpand:
     def test_symmetric(self):
@@ -560,6 +592,7 @@ class TestExpand:
 # shift
 # ---------------------------------------------------------------------------
 
+
 class TestShift:
     def test_shift_right(self):
         a = make_batch([("chr1", 10, 20)])
@@ -584,6 +617,7 @@ class TestShift:
 # ---------------------------------------------------------------------------
 # sort_bedframe
 # ---------------------------------------------------------------------------
+
 
 class TestSortBedframe:
     def test_natural_order(self):
@@ -614,6 +648,7 @@ class TestSortBedframe:
 # flank
 # ---------------------------------------------------------------------------
 
+
 class TestFlank:
     def test_flank_left(self):
         a = make_batch([("chr1", 100, 200)])
@@ -642,6 +677,7 @@ class TestFlank:
 # set_width
 # ---------------------------------------------------------------------------
 
+
 class TestSetWidth:
     def test_anchor_start(self):
         a = make_batch([("chr1", 10, 30)])
@@ -669,6 +705,7 @@ class TestSetWidth:
 # ---------------------------------------------------------------------------
 # tile
 # ---------------------------------------------------------------------------
+
 
 class TestTile:
     def test_basic(self):
@@ -706,6 +743,7 @@ class TestTile:
 # disjoin
 # ---------------------------------------------------------------------------
 
+
 class TestDisjoin:
     def test_basic(self):
         a = make_batch([("chr1", 1, 10), ("chr1", 5, 15)])
@@ -740,6 +778,7 @@ class TestDisjoin:
 # ---------------------------------------------------------------------------
 # intersect_ranges
 # ---------------------------------------------------------------------------
+
 
 class TestIntersectRanges:
     def test_basic(self):
@@ -785,6 +824,7 @@ class TestIntersectRanges:
 # union_ranges
 # ---------------------------------------------------------------------------
 
+
 class TestUnionRanges:
     def test_basic(self):
         a = make_batch([("chr1", 0, 10)])
@@ -828,6 +868,7 @@ class TestUnionRanges:
 # ---------------------------------------------------------------------------
 # setdiff_ranges
 # ---------------------------------------------------------------------------
+
 
 class TestSetdiffRanges:
     def test_basic(self):

@@ -506,12 +506,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ladle-arrow"
+version = "0.1.0"
+dependencies = [
+ "arrow",
+ "arrow-array",
+ "pyo3",
+]
+
+[[package]]
 name = "ladle-io"
 version = "0.1.0"
 dependencies = [
  "arrow",
  "arrow-array",
  "bstr",
+ "ladle-arrow",
  "libc",
  "noodles",
  "pyo3",
@@ -524,6 +534,7 @@ dependencies = [
  "arrow",
  "arrow-array",
  "coitrees",
+ "ladle-arrow",
  "pyo3",
  "rayon",
 ]

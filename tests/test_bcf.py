@@ -14,8 +14,8 @@ HEADER_TEXT = (
     "##fileformat=VCFv4.2\n"
     "##contig=<ID=chr1,length=248956422>\n"
     "##contig=<ID=chr2,length=242193529>\n"
-    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total depth\">\n"
-    "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele frequency\">\n"
+    '##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth">\n'
+    '##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">\n'
     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
 )
 
@@ -99,9 +99,7 @@ class TestReaderWriter:
         assert records2[0].reference_sequence_name(header2) == "chr1"
 
     def test_multiple_records(self, tmp_path):
-        records_text = "".join(
-            f"chr1\t{100 + i}\t.\tA\tG\t.\t.\t.\n" for i in range(5)
-        )
+        records_text = "".join(f"chr1\t{100 + i}\t.\tA\tG\t.\t.\t.\n" for i in range(5))
         bcf_path = str(tmp_path / "multi.bcf")
         _vcf_text_to_bcf(HEADER_TEXT + records_text, bcf_path)
 
@@ -223,7 +221,7 @@ class TestRecord:
         header_text = (
             "##fileformat=VCFv4.2\n"
             "##contig=<ID=chr1,length=248956422>\n"
-            "##INFO=<ID=DB,Number=0,Type=Flag,Description=\"dbSNP membership\">\n"
+            '##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP membership">\n'
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
         )
         bcf_path = str(tmp_path / "flag.bcf")
@@ -243,11 +241,11 @@ class TestRecord:
 INFO_FMT_HEADER_TEXT = (
     "##fileformat=VCFv4.2\n"
     "##contig=<ID=chr1,length=248956422>\n"
-    "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total depth\">\n"
-    "##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele frequency\">\n"
-    "##INFO=<ID=DB,Number=0,Type=Flag,Description=\"dbSNP\">\n"
-    "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
-    "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype quality\">\n"
+    '##INFO=<ID=DP,Number=1,Type=Integer,Description="Total depth">\n'
+    '##INFO=<ID=AF,Number=A,Type=Float,Description="Allele frequency">\n'
+    '##INFO=<ID=DB,Number=0,Type=Flag,Description="dbSNP">\n'
+    '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n'
+    '##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">\n'
     "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tSAMPLE1\tSAMPLE2\n"
 )
 
@@ -302,17 +300,22 @@ class TestHeaderFields:
         assert d["GQ"] == "Integer"
 
     def test_empty_header_info_fields(self):
-        hdr = vcf.Header.parse("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n")
+        hdr = vcf.Header.parse(
+            "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+        )
         assert hdr.info_fields() == []
 
     def test_empty_header_format_fields(self):
-        hdr = vcf.Header.parse("##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n")
+        hdr = vcf.Header.parse(
+            "##fileformat=VCFv4.2\n#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\n"
+        )
         assert hdr.format_fields() == []
 
 
 # ---------------------------------------------------------------------------
 # RecordBatch with INFO/FORMAT columns (BCF)
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def info_fmt_batch(info_fmt_bcf_path):
