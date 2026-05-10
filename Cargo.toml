@@ -3,7 +3,7 @@ members = ["ladle-io", "ladle-ops"]
 resolver = "2"
 
 [workspace.dependencies]
-pyo3        = { version = "0.28", features = [] }
+pyo3        = { version = "0.28", features = ["abi3-py311"] }
 arrow       = { version = "58", default-features = false, features = ["ffi"] }
 arrow-array = { version = "58", default-features = false }
 
