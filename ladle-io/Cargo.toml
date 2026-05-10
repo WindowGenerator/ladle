@@ -10,6 +10,7 @@ name        = "_ladle_io"
 crate-type  = ["cdylib", "rlib"]
 
 [dependencies]
+ladle-arrow = { workspace = true }
 pyo3        = { workspace = true }
 arrow       = { workspace = true }
 arrow-array = { workspace = true }

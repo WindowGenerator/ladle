@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-pub mod arrow_utils;
+pub use ladle_arrow as arrow_utils;
 mod io;
 
 #[pymodule]
