@@ -30,7 +30,7 @@ lint-python-fix:
 # Run all linters
 lint:
     {{ruff}} check python/ tests/
-    cargo clippy --workspace -- -D warnings
+    VIRTUAL_ENV=`pwd`/{{venv}} cargo clippy --workspace -- -D warnings
 
 # Format everything
 fmt:

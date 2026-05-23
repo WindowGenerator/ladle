@@ -11,17 +11,30 @@ pub fn prefixed_schema(a: &Schema, b: &Schema) -> Arc<Schema> {
     let fields: Vec<Field> = a
         .fields()
         .iter()
-        .map(|f| Field::new(format!("a_{}", f.name()), f.data_type().clone(), f.is_nullable()))
+        .map(|f| {
+            Field::new(
+                format!("a_{}", f.name()),
+                f.data_type().clone(),
+                f.is_nullable(),
+            )
+        })
         .chain(b.fields().iter().map(|f| {
-            Field::new(format!("b_{}", f.name()), f.data_type().clone(), f.is_nullable())
+            Field::new(
+                format!("b_{}", f.name()),
+                f.data_type().clone(),
+                f.is_nullable(),
+            )
         }))
         .collect();
     Arc::new(Schema::new(fields))
 }
 
 pub fn nearest_schema(a: &Schema, b: &Schema) -> Arc<Schema> {
-    let mut fields: Vec<Field> =
-        prefixed_schema(a, b).fields().iter().map(|f| f.as_ref().clone()).collect();
+    let mut fields: Vec<Field> = prefixed_schema(a, b)
+        .fields()
+        .iter()
+        .map(|f| f.as_ref().clone())
+        .collect();
     fields.push(Field::new("distance", DataType::Int64, true));
     Arc::new(Schema::new(fields))
 }
@@ -35,9 +48,7 @@ pub fn take_rows(batch: &RecordBatch, indices: &UInt32Array) -> Result<Vec<Array
         .collect()
 }
 
-pub fn sorted_intervals(
-    batch: &RecordBatch,
-) -> Result<Vec<(String, i32, i32, usize)>, ArrowError> {
+pub fn sorted_intervals(batch: &RecordBatch) -> Result<Vec<(String, i32, i32, usize)>, ArrowError> {
     let cols = resolve_interval_cols(batch.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
     let mut rows: Vec<(String, i32, i32, usize)> = (0..batch.num_rows())

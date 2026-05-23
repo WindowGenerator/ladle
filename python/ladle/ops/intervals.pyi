@@ -88,9 +88,7 @@ def subtract(a: ArrowLike, b: ArrowLike) -> pyarrow.RecordBatch:
     """
     ...
 
-def complement(
-    a: ArrowLike, chrom_sizes: dict[str, int] | None = None
-) -> pyarrow.RecordBatch:
+def complement(a: ArrowLike, chrom_sizes: dict[str, int] | None = None) -> pyarrow.RecordBatch:
     """
     Return the gaps between intervals on each chromosome.
 

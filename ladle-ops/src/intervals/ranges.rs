@@ -25,8 +25,10 @@ pub fn intersect_ranges_batches(
                 .push(Interval::new(start, end - 1, row as u32));
         }
     }
-    let trees: HashMap<String, COITree<u32, u32>> =
-        b_groups.into_iter().map(|(k, v)| (k, COITree::new(&v))).collect();
+    let trees: HashMap<String, COITree<u32, u32>> = b_groups
+        .into_iter()
+        .map(|(k, v)| (k, COITree::new(&v)))
+        .collect();
 
     let mut raw: Vec<(String, i32, i32)> = Vec::new();
     for row in 0..a.num_rows() {
@@ -84,10 +86,7 @@ pub fn union_ranges_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBa
     chrom_start_end_batch(merged)
 }
 
-pub fn setdiff_ranges_batches(
-    a: &RecordBatch,
-    b: &RecordBatch,
-) -> Result<RecordBatch, ArrowError> {
+pub fn setdiff_ranges_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBatch, ArrowError> {
     let a_cols = resolve_interval_cols(a.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
     let b_cols = resolve_interval_cols(b.schema_ref())
@@ -96,7 +95,10 @@ pub fn setdiff_ranges_batches(
     let mut b_sorted: HashMap<String, Vec<(i32, i32)>> = HashMap::new();
     for row in 0..b.num_rows() {
         if let Some((chrom, start, end)) = get_interval(b, &b_cols, row) {
-            b_sorted.entry(chrom.to_string()).or_default().push((start, end));
+            b_sorted
+                .entry(chrom.to_string())
+                .or_default()
+                .push((start, end));
         }
     }
     for v in b_sorted.values_mut() {

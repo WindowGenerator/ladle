@@ -1,11 +1,13 @@
 from __future__ import annotations
 import io
 from types import TracebackType
-from typing import Any
+from typing import Any, TypeVar
 
 from ladle.io.core import Position, Region
 from ladle.io.sam import Flags, Header, MappingQuality
 import ladle.io.sam as sam
+
+Num = TypeVar("Num", bound=float | int)
 
 class Record:
     def name(self) -> bytes | None: ...
@@ -19,7 +21,7 @@ class Record:
     def template_length(self) -> int: ...
     def sequence(self) -> bytes: ...
     def quality_scores(self) -> bytes: ...
-    def data(self) -> dict[bytes, int | float | bytes | list[int] | list[float]]: ...
+    def data(self) -> dict[bytes, int | float | bytes | list[Num]]: ...
     def __repr__(self) -> str: ...
 
 class Reader:

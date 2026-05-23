@@ -36,8 +36,12 @@ pub fn cluster_batches(batch: &RecordBatch) -> Result<RecordBatch, ArrowError> {
     }
     assignments.sort_unstable_by_key(|&(orig, _)| orig);
 
-    let mut fields: Vec<Field> =
-        batch.schema().fields().iter().map(|f| f.as_ref().clone()).collect();
+    let mut fields: Vec<Field> = batch
+        .schema()
+        .fields()
+        .iter()
+        .map(|f| f.as_ref().clone())
+        .collect();
     fields.push(Field::new("cluster_id", DataType::UInt32, false));
     let schema = Arc::new(Schema::new(fields));
 
@@ -171,10 +175,12 @@ pub fn expand_batches(
         .downcast_ref::<Int32Array>()
         .ok_or_else(|| ArrowError::InvalidArgumentError("end column is not Int32".into()))?;
 
-    let new_start: Int32Array =
-        (0..batch.num_rows()).map(|i| (old_start.value(i) - l).max(1)).collect();
-    let new_end: Int32Array =
-        (0..batch.num_rows()).map(|i| old_end.value(i) + r).collect();
+    let new_start: Int32Array = (0..batch.num_rows())
+        .map(|i| (old_start.value(i) - l).max(1))
+        .collect();
+    let new_end: Int32Array = (0..batch.num_rows())
+        .map(|i| old_end.value(i) + r)
+        .collect();
 
     let mut columns = batch.columns().to_vec();
     columns[cols.start] = Arc::new(new_start) as ArrayRef;
@@ -197,8 +203,9 @@ pub fn shift_batches(batch: &RecordBatch, amount: i32) -> Result<RecordBatch, Ar
         .downcast_ref::<Int32Array>()
         .ok_or_else(|| ArrowError::InvalidArgumentError("end column is not Int32".into()))?;
 
-    let new_start: Int32Array =
-        (0..batch.num_rows()).map(|i| (old_start.value(i) + amount).max(1)).collect();
+    let new_start: Int32Array = (0..batch.num_rows())
+        .map(|i| (old_start.value(i) + amount).max(1))
+        .collect();
     let new_end: Int32Array = (0..batch.num_rows())
         .map(|i| {
             let s = old_start.value(i) + amount;
@@ -216,14 +223,20 @@ pub fn shift_batches(batch: &RecordBatch, amount: i32) -> Result<RecordBatch, Ar
     RecordBatch::try_new(batch.schema(), columns)
 }
 
-pub fn sort_bedframe_batches(batch: &RecordBatch, natural: bool) -> Result<RecordBatch, ArrowError> {
+pub fn sort_bedframe_batches(
+    batch: &RecordBatch,
+    natural: bool,
+) -> Result<RecordBatch, ArrowError> {
     use arrow::array::StringArray;
     use arrow::compute::{SortColumn, SortOptions, lexsort_to_indices};
 
     let cols = resolve_interval_cols(batch.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
 
-    let opts = SortOptions { descending: false, nulls_first: false };
+    let opts = SortOptions {
+        descending: false,
+        nulls_first: false,
+    };
 
     let sort_indices = if natural {
         let chrom_col = batch
@@ -236,8 +249,7 @@ pub fn sort_bedframe_batches(batch: &RecordBatch, natural: bool) -> Result<Recor
         let mut nums: Vec<i64> = Vec::with_capacity(batch.num_rows());
         for i in 0..batch.num_rows() {
             let s = chrom_col.value(i);
-            let split_pos =
-                s.len() - s.chars().rev().take_while(|c| c.is_ascii_digit()).count();
+            let split_pos = s.len() - s.chars().rev().take_while(|c| c.is_ascii_digit()).count();
             prefixes.push(s[..split_pos].to_string());
             nums.push(s[split_pos..].parse::<i64>().unwrap_or(i64::MAX));
         }
@@ -251,8 +263,14 @@ pub fn sort_bedframe_batches(batch: &RecordBatch, natural: bool) -> Result<Recor
 
         lexsort_to_indices(
             &[
-                SortColumn { values: Arc::new(prefix_arr) as ArrayRef, options: Some(opts) },
-                SortColumn { values: Arc::new(num_arr) as ArrayRef, options: Some(opts) },
+                SortColumn {
+                    values: Arc::new(prefix_arr) as ArrayRef,
+                    options: Some(opts),
+                },
+                SortColumn {
+                    values: Arc::new(num_arr) as ArrayRef,
+                    options: Some(opts),
+                },
                 SortColumn {
                     values: Arc::new(start_col.clone()) as ArrayRef,
                     options: Some(opts),
@@ -263,8 +281,14 @@ pub fn sort_bedframe_batches(batch: &RecordBatch, natural: bool) -> Result<Recor
     } else {
         lexsort_to_indices(
             &[
-                SortColumn { values: batch.column(cols.chrom).clone(), options: Some(opts) },
-                SortColumn { values: batch.column(cols.start).clone(), options: Some(opts) },
+                SortColumn {
+                    values: batch.column(cols.chrom).clone(),
+                    options: Some(opts),
+                },
+                SortColumn {
+                    values: batch.column(cols.start).clone(),
+                    options: Some(opts),
+                },
             ],
             None,
         )?
@@ -278,7 +302,11 @@ pub fn sort_bedframe_batches(batch: &RecordBatch, natural: bool) -> Result<Recor
     RecordBatch::try_new(batch.schema(), columns?)
 }
 
-pub fn flank_batches(batch: &RecordBatch, width: i32, start: bool) -> Result<RecordBatch, ArrowError> {
+pub fn flank_batches(
+    batch: &RecordBatch,
+    width: i32,
+    start: bool,
+) -> Result<RecordBatch, ArrowError> {
     let cols = resolve_interval_cols(batch.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
 
@@ -301,8 +329,9 @@ pub fn flank_batches(batch: &RecordBatch, width: i32, start: bool) -> Result<Rec
         (ns, ne)
     } else {
         let ns = (0..batch.num_rows()).map(|i| old_end.value(i)).collect();
-        let ne =
-            (0..batch.num_rows()).map(|i| old_end.value(i) + width).collect();
+        let ne = (0..batch.num_rows())
+            .map(|i| old_end.value(i) + width)
+            .collect();
         (ns, ne)
     };
 
@@ -334,8 +363,9 @@ pub fn set_width_batches(
     let (new_start, new_end): (Int32Array, Int32Array) = match anchor {
         "start" => {
             let ns = (0..batch.num_rows()).map(|i| old_start.value(i)).collect();
-            let ne =
-                (0..batch.num_rows()).map(|i| old_start.value(i) + width).collect();
+            let ne = (0..batch.num_rows())
+                .map(|i| old_start.value(i) + width)
+                .collect();
             (ns, ne)
         }
         "end" => {
@@ -438,8 +468,10 @@ pub fn subtract_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBatch,
                 .push(Interval::new(start, end - 1, row as u32));
         }
     }
-    let trees: HashMap<String, COITree<u32, u32>> =
-        b_groups.into_iter().map(|(k, v)| (k, COITree::new(&v))).collect();
+    let trees: HashMap<String, COITree<u32, u32>> = b_groups
+        .into_iter()
+        .map(|(k, v)| (k, COITree::new(&v)))
+        .collect();
 
     let keep: Vec<u32> = (0..a.num_rows() as u32)
         .filter(|&row| match get_interval(a, &a_cols, row as usize) {
@@ -482,8 +514,9 @@ pub fn disjoin_batches(batch: &RecordBatch) -> Result<RecordBatch, ArrowError> {
 
         for w in pts.windows(2) {
             let (bp_s, bp_e) = (w[0], w[1]);
-            let covered =
-                sorted[i..j].iter().any(|(_, s, e, _)| *s <= bp_s && *e >= bp_e);
+            let covered = sorted[i..j]
+                .iter()
+                .any(|(_, s, e, _)| *s <= bp_s && *e >= bp_e);
             if covered {
                 result.push((chrom.clone(), bp_s, bp_e));
             }
