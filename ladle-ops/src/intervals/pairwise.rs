@@ -4,7 +4,7 @@ use std::sync::Arc;
 use arrow::array::{ArrayRef, Int64Array, Int64Builder, UInt32Array};
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
-use coitrees::{COITree, Interval, IntervalTree};
+use coitrees::{COITree, GenericInterval, Interval, IntervalTree};
 use rayon::prelude::*;
 
 use super::helpers::{nearest_schema, prefixed_schema, take_rows};
@@ -51,7 +51,7 @@ pub fn overlap_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBatch, 
             for &a_idx in a_rows {
                 if let Some((_, start, end)) = get_interval(a, &a_cols, a_idx as usize) {
                     tree.query(start, end - 1, |hit| {
-                        local.push((a_idx, *hit.metadata));
+                        local.push((a_idx, *hit.metadata()));
                     });
                 }
             }
@@ -144,7 +144,7 @@ pub fn nearest_batches(
                         let te = hit.last as i64 + 1;
                         let t_mid = (ts + te) / 2;
                         let diff = (q_mid - t_mid).abs();
-                        let t_idx = *hit.metadata;
+                        let t_idx = *hit.metadata();
                         let better = match best_overlap {
                             None => true,
                             Some((d, bi)) => diff < d || (diff == d && t_idx < bi),
