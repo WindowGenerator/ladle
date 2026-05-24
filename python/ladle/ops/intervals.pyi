@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Literal, Union
 
 import pyarrow
 
@@ -14,22 +14,42 @@ ArrowLike = Union[
     "pd.DataFrame",
 ]
 
-def overlap(a: ArrowLike, b: ArrowLike) -> pyarrow.RecordBatch:
+def overlap(
+    a: ArrowLike,
+    b: ArrowLike,
+    how: Literal["join", "semi"] = "join",
+) -> pyarrow.RecordBatch:
     """
-    Find all overlapping pairs of rows between `a` and `b`.
+    Find overlapping intervals between `a` and `b`.
 
-    Inputs accept pyarrow.RecordBatch, polars.DataFrame, or pandas.DataFrame.
-    Both inputs must have columns resolvable as chromosome, start, and end:
-      - chromosome: "chrom", "contig", or "chr"
-      - start:      "start" or "pos" (0-based, half-open)
-      - end:        "end" or "stop"
+    Both inputs must have columns named "chrom"/"contig"/"chr", "start"/"pos",
+    and "end"/"stop". Rename columns before calling if needed:
+      - PyArrow:  batch.rename_columns({"seqname": "chrom", ...})
+      - Polars:   df.rename({"seqname": "chrom", ...})
+      - Pandas:   df.rename(columns={"seqname": "chrom", ...})
 
-    Returns a pyarrow.RecordBatch with all columns from `a` prefixed "a_"
-    followed by all columns from `b` prefixed "b_". One row per overlapping pair.
-    Rows with no overlap are excluded (inner join semantics).
-    Cross-chromosome pairs are never considered overlapping.
+    Parameters
+    ----------
+    how : "join" | "semi"
+        "join" (default) — one row per overlapping pair; columns from both
+        inputs prefixed "a_" and "b_" respectively (inner join semantics).
+        If `b` contains duplicate intervals that all overlap the same row in
+        `a`, each duplicate produces a separate output row. Use
+        `.unique()` / `.drop_duplicates()` on the result if needed.
+
+        "semi" — rows from `a` that have at least one overlap in `b`,
+        preserving the schema and row count of `a` without duplication.
+        Equivalent to a filter: keeps `a` rows where any `b` row overlaps.
+
     Overlap condition: a.start < b.end and b.start < a.end (half-open intervals).
+    Cross-chromosome pairs are never considered overlapping.
     Uses all available CPU cores (Rayon parallel).
+
+    Returns
+    -------
+    pyarrow.RecordBatch
+        "join": columns from `a` prefixed "a_", columns from `b" prefixed "b_".
+        "semi": same schema as `a`.
     """
     ...
 
@@ -37,15 +57,14 @@ def nearest(query: ArrowLike, target: ArrowLike) -> pyarrow.RecordBatch:
     """
     For each row in `query`, find the nearest row in `target` on the same chromosome.
 
-    Inputs accept pyarrow.RecordBatch, polars.DataFrame, or pandas.DataFrame.
-    Both inputs must have columns resolvable as chromosome, start, and end.
+    Both inputs must have columns named "chrom"/"contig"/"chr", "start"/"pos",
+    and "end"/"stop". Rename columns before calling if needed.
 
     Returns a pyarrow.RecordBatch with one row per query row:
       - all columns from `query` prefixed "a_"
       - nearest target columns prefixed "b_" (null if no same-chromosome target)
-      - "distance" Int64 column: 0 if intervals overlap, otherwise the minimum
-        of |query.start - target.end| and |target.start - query.end|.
-        Null if no same-chromosome target exists.
+      - "distance" Int64: 0 if overlapping, gap in bases otherwise, null if
+        no same-chromosome target exists.
 
     When multiple target rows are equidistant, the one with the smaller
     row index is returned. Uses all available CPU cores (Rayon parallel).
@@ -55,6 +74,9 @@ def nearest(query: ArrowLike, target: ArrowLike) -> pyarrow.RecordBatch:
 def count_overlaps(a: ArrowLike, b: ArrowLike) -> pyarrow.RecordBatch:
     """
     For each row in `a`, count how many rows in `b` it overlaps.
+
+    Both inputs must have columns named "chrom"/"contig"/"chr", "start"/"pos",
+    and "end"/"stop". Rename columns before calling if needed.
 
     Returns a pyarrow.RecordBatch with all columns from `a` plus a
     "count" UInt32 column. One row per input `a` row; count=0 when no overlap.
