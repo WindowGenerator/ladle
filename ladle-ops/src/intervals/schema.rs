@@ -17,6 +17,32 @@ pub fn resolve_interval_cols(schema: &Schema) -> PyResult<IntervalCols> {
     Ok(IntervalCols { chrom, start, end })
 }
 
+pub fn resolve_on_cols(schema: &Schema, names: &[String]) -> PyResult<Vec<usize>> {
+    names
+        .iter()
+        .map(|name| {
+            schema
+                .column_with_name(name)
+                .map(|(idx, _)| idx)
+                .ok_or_else(|| PyValueError::new_err(format!("on_cols column not found: '{name}'")))
+        })
+        .collect()
+}
+
+pub fn group_key(
+    batch: &RecordBatch,
+    cols: &IntervalCols,
+    on_col_indices: &[usize],
+    row: usize,
+) -> Option<Vec<String>> {
+    let chrom = extract_str(batch.column(cols.chrom).as_ref(), row)?;
+    let mut key = vec![chrom.to_string()];
+    for &idx in on_col_indices {
+        key.push(extract_str(batch.column(idx).as_ref(), row)?.to_string());
+    }
+    Some(key)
+}
+
 fn find_col(schema: &Schema, candidates: &[&str]) -> PyResult<usize> {
     for name in candidates {
         if let Some((idx, _)) = schema.column_with_name(name) {

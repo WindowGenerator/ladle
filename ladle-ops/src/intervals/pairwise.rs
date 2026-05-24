@@ -8,101 +8,147 @@ use coitrees::{COITree, GenericInterval, Interval, IntervalTree};
 use rayon::prelude::*;
 
 use super::helpers::{nearest_schema, prefixed_schema, take_rows};
-use super::schema::{get_interval, resolve_interval_cols};
+use super::schema::{get_interval, group_key, resolve_interval_cols};
 
-pub fn overlap_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBatch, ArrowError> {
+pub enum OverlapOutput {
+    Join,
+    Semi,
+}
+
+pub fn overlap_batches(
+    a: &RecordBatch,
+    b: &RecordBatch,
+    how: OverlapOutput,
+    on_a: &[usize],
+    on_b: &[usize],
+) -> Result<RecordBatch, ArrowError> {
     let a_cols = resolve_interval_cols(a.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
     let b_cols = resolve_interval_cols(b.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
 
-    let mut b_groups: HashMap<String, Vec<Interval<u32>>> = HashMap::new();
+    let mut b_groups: HashMap<Vec<String>, Vec<Interval<u32>>> = HashMap::new();
     for row in 0..b.num_rows() {
-        if let Some((chrom, start, end)) = get_interval(b, &b_cols, row) {
+        if let Some(key) = group_key(b, &b_cols, on_b, row)
+            && let Some((_, start, end)) = get_interval(b, &b_cols, row)
+        {
             b_groups
-                .entry(chrom.to_string())
+                .entry(key)
                 .or_default()
                 .push(Interval::new(start, end - 1, row as u32));
         }
     }
-    let trees: HashMap<String, COITree<u32, u32>> = b_groups
+    let trees: HashMap<Vec<String>, COITree<u32, u32>> = b_groups
         .into_iter()
         .map(|(k, v)| (k, COITree::new(&v)))
         .collect();
 
-    let mut a_groups: HashMap<String, Vec<u32>> = HashMap::new();
+    let mut a_groups: HashMap<Vec<String>, Vec<u32>> = HashMap::new();
     for row in 0..a.num_rows() {
-        if let Some((chrom, _, _)) = get_interval(a, &a_cols, row) {
-            a_groups
-                .entry(chrom.to_string())
-                .or_default()
-                .push(row as u32);
+        if let Some(key) = group_key(a, &a_cols, on_a, row) {
+            a_groups.entry(key).or_default().push(row as u32);
         }
     }
 
-    let pairs: Vec<(u32, u32)> = a_groups
-        .par_iter()
-        .flat_map(|(chrom, a_rows)| {
-            let tree = match trees.get(chrom) {
-                Some(t) => t,
-                None => return vec![],
-            };
-            let mut local: Vec<(u32, u32)> = Vec::new();
-            for &a_idx in a_rows {
-                if let Some((_, start, end)) = get_interval(a, &a_cols, a_idx as usize) {
-                    tree.query(start, end - 1, |hit| {
-                        local.push((a_idx, *hit.metadata()));
-                    });
-                }
+    match how {
+        OverlapOutput::Semi => {
+            let mut indices: Vec<u32> = a_groups
+                .par_iter()
+                .flat_map(|(chrom, a_rows)| {
+                    let tree = match trees.get(chrom) {
+                        Some(t) => t,
+                        None => return vec![],
+                    };
+                    let mut local: Vec<u32> = Vec::new();
+                    for &a_idx in a_rows {
+                        if let Some((_, start, end)) = get_interval(a, &a_cols, a_idx as usize)
+                            && tree.query_count(start, end - 1) > 0
+                        {
+                            local.push(a_idx);
+                        }
+                    }
+                    local
+                })
+                .collect();
+            indices.sort_unstable();
+            if indices.is_empty() {
+                return Ok(RecordBatch::new_empty(a.schema()));
             }
-            local
-        })
-        .collect();
+            let idx_arr = UInt32Array::from(indices);
+            let columns: Vec<ArrayRef> = take_rows(a, &idx_arr)?;
+            RecordBatch::try_new(a.schema(), columns)
+        }
+        OverlapOutput::Join => {
+            let pairs: Vec<(u32, u32)> = a_groups
+                .par_iter()
+                .flat_map(|(chrom, a_rows)| {
+                    let tree = match trees.get(chrom) {
+                        Some(t) => t,
+                        None => return vec![],
+                    };
+                    let mut local: Vec<(u32, u32)> = Vec::new();
+                    for &a_idx in a_rows {
+                        if let Some((_, start, end)) = get_interval(a, &a_cols, a_idx as usize) {
+                            tree.query(start, end - 1, |hit| {
+                                local.push((a_idx, *hit.metadata()));
+                            });
+                        }
+                    }
+                    local
+                })
+                .collect();
 
-    if pairs.is_empty() {
-        return Ok(RecordBatch::new_empty(prefixed_schema(
-            a.schema_ref(),
-            b.schema_ref(),
-        )));
+            if pairs.is_empty() {
+                return Ok(RecordBatch::new_empty(prefixed_schema(
+                    a.schema_ref(),
+                    b.schema_ref(),
+                )));
+            }
+
+            let a_indices = UInt32Array::from(pairs.iter().map(|&(i, _)| i).collect::<Vec<_>>());
+            let b_indices = UInt32Array::from(pairs.iter().map(|&(_, j)| j).collect::<Vec<_>>());
+
+            let schema = prefixed_schema(a.schema_ref(), b.schema_ref());
+            let mut columns: Vec<ArrayRef> = take_rows(a, &a_indices)?;
+            columns.extend(take_rows(b, &b_indices)?);
+            RecordBatch::try_new(schema, columns)
+        }
     }
-
-    let a_indices = UInt32Array::from(pairs.iter().map(|&(i, _)| i).collect::<Vec<_>>());
-    let b_indices = UInt32Array::from(pairs.iter().map(|&(_, j)| j).collect::<Vec<_>>());
-
-    let schema = prefixed_schema(a.schema_ref(), b.schema_ref());
-    let mut columns: Vec<ArrayRef> = take_rows(a, &a_indices)?;
-    columns.extend(take_rows(b, &b_indices)?);
-    RecordBatch::try_new(schema, columns)
 }
 
 pub fn nearest_batches(
     query: &RecordBatch,
     target: &RecordBatch,
+    on_q: &[usize],
+    on_t: &[usize],
 ) -> Result<RecordBatch, ArrowError> {
     let q_cols = resolve_interval_cols(query.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
     let t_cols = resolve_interval_cols(target.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
 
-    let mut t_groups: HashMap<String, Vec<Interval<u32>>> = HashMap::new();
-    let mut t_sorted: HashMap<String, Vec<(i32, i32, u32)>> = HashMap::new();
+    let mut t_groups: HashMap<Vec<String>, Vec<Interval<u32>>> = HashMap::new();
+    let mut t_sorted: HashMap<Vec<String>, Vec<(i32, i32, u32)>> = HashMap::new();
     for row in 0..target.num_rows() {
-        if let Some((chrom, start, end)) = get_interval(target, &t_cols, row) {
-            t_groups
-                .entry(chrom.to_string())
-                .or_default()
-                .push(Interval::new(start, end - 1, row as u32));
+        if let Some(key) = group_key(target, &t_cols, on_t, row)
+            && let Some((_, start, end)) = get_interval(target, &t_cols, row)
+        {
+            t_groups.entry(key.clone()).or_default().push(Interval::new(
+                start,
+                end - 1,
+                row as u32,
+            ));
             t_sorted
-                .entry(chrom.to_string())
+                .entry(key)
                 .or_default()
                 .push((start, end, row as u32));
         }
     }
-    let trees: HashMap<String, COITree<u32, u32>> = t_groups
+    let trees: HashMap<Vec<String>, COITree<u32, u32>> = t_groups
         .into_iter()
         .map(|(k, v)| (k, COITree::new(&v)))
         .collect();
-    let t_sorted: HashMap<String, Vec<(i32, i32, u32)>> = t_sorted
+    let t_sorted: HashMap<Vec<String>, Vec<(i32, i32, u32)>> = t_sorted
         .into_iter()
         .map(|(k, mut v)| {
             v.sort_unstable_by_key(|&(s, _, _)| s);
@@ -110,13 +156,11 @@ pub fn nearest_batches(
         })
         .collect();
 
-    let mut q_groups: HashMap<String, Vec<u32>> = HashMap::new();
+    let mut q_groups: HashMap<Vec<String>, Vec<u32>> = HashMap::new();
     for row in 0..query.num_rows() {
-        let chrom = match get_interval(query, &q_cols, row) {
-            Some((ch, _, _)) => ch.to_string(),
-            None => "\x00unmatched".to_string(),
-        };
-        q_groups.entry(chrom).or_default().push(row as u32);
+        let key = group_key(query, &q_cols, on_q, row)
+            .unwrap_or_else(|| vec!["\x00unmatched".to_string()]);
+        q_groups.entry(key).or_default().push(row as u32);
     }
 
     let mut results: Vec<(u32, Option<u32>, Option<i64>)> = q_groups
@@ -211,33 +255,37 @@ pub fn nearest_batches(
     RecordBatch::try_new(schema, columns)
 }
 
-pub fn count_overlaps_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBatch, ArrowError> {
+pub fn count_overlaps_batches(
+    a: &RecordBatch,
+    b: &RecordBatch,
+    on_a: &[usize],
+    on_b: &[usize],
+) -> Result<RecordBatch, ArrowError> {
     let a_cols = resolve_interval_cols(a.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
     let b_cols = resolve_interval_cols(b.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
 
-    let mut b_groups: HashMap<String, Vec<Interval<u32>>> = HashMap::new();
+    let mut b_groups: HashMap<Vec<String>, Vec<Interval<u32>>> = HashMap::new();
     for row in 0..b.num_rows() {
-        if let Some((chrom, start, end)) = get_interval(b, &b_cols, row) {
+        if let Some(key) = group_key(b, &b_cols, on_b, row)
+            && let Some((_, start, end)) = get_interval(b, &b_cols, row)
+        {
             b_groups
-                .entry(chrom.to_string())
+                .entry(key)
                 .or_default()
                 .push(Interval::new(start, end - 1, row as u32));
         }
     }
-    let trees: HashMap<String, COITree<u32, u32>> = b_groups
+    let trees: HashMap<Vec<String>, COITree<u32, u32>> = b_groups
         .into_iter()
         .map(|(k, v)| (k, COITree::new(&v)))
         .collect();
 
-    let mut a_groups: HashMap<String, Vec<u32>> = HashMap::new();
+    let mut a_groups: HashMap<Vec<String>, Vec<u32>> = HashMap::new();
     for row in 0..a.num_rows() {
-        if let Some((chrom, _, _)) = get_interval(a, &a_cols, row) {
-            a_groups
-                .entry(chrom.to_string())
-                .or_default()
-                .push(row as u32);
+        if let Some(key) = group_key(a, &a_cols, on_a, row) {
+            a_groups.entry(key).or_default().push(row as u32);
         }
     }
 

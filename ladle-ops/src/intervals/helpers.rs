@@ -5,7 +5,7 @@ use arrow::datatypes::{DataType, Field, Schema};
 use arrow::error::ArrowError;
 use arrow::record_batch::RecordBatch;
 
-use super::schema::{get_interval, resolve_interval_cols};
+use super::schema::{get_interval, group_key, resolve_interval_cols};
 
 pub fn prefixed_schema(a: &Schema, b: &Schema) -> Arc<Schema> {
     let fields: Vec<Field> = a
@@ -48,13 +48,17 @@ pub fn take_rows(batch: &RecordBatch, indices: &UInt32Array) -> Result<Vec<Array
         .collect()
 }
 
-pub fn sorted_intervals(batch: &RecordBatch) -> Result<Vec<(String, i32, i32, usize)>, ArrowError> {
+pub fn sorted_intervals_grouped(
+    batch: &RecordBatch,
+    on_col_indices: &[usize],
+) -> Result<Vec<(String, i32, i32, usize)>, ArrowError> {
     let cols = resolve_interval_cols(batch.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
     let mut rows: Vec<(String, i32, i32, usize)> = (0..batch.num_rows())
         .filter_map(|i| {
-            let (ch, s, e) = get_interval(batch, &cols, i)?;
-            Some((ch.to_string(), s, e, i))
+            let key = group_key(batch, &cols, on_col_indices, i)?;
+            let (_, s, e) = get_interval(batch, &cols, i)?;
+            Some((key.join("\x00"), s, e, i))
         })
         .collect();
     rows.sort_unstable_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));

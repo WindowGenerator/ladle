@@ -8,11 +8,11 @@ use arrow::record_batch::RecordBatch;
 
 use coitrees::{COITree, Interval, IntervalTree};
 
-use super::helpers::{chrom_start_end_batch, sorted_intervals, take_rows};
-use super::schema::{get_interval, resolve_interval_cols};
+use super::helpers::{chrom_start_end_batch, sorted_intervals_grouped, take_rows};
+use super::schema::{get_interval, group_key, resolve_interval_cols};
 
-pub fn cluster_batches(batch: &RecordBatch) -> Result<RecordBatch, ArrowError> {
-    let sorted = sorted_intervals(batch)?;
+pub fn cluster_batches(batch: &RecordBatch, on_cols: &[usize]) -> Result<RecordBatch, ArrowError> {
+    let sorted = sorted_intervals_grouped(batch, on_cols)?;
 
     let mut assignments: Vec<(usize, u32)> = Vec::with_capacity(sorted.len());
     let mut cluster_id: u32 = 0;
@@ -51,8 +51,8 @@ pub fn cluster_batches(batch: &RecordBatch) -> Result<RecordBatch, ArrowError> {
     RecordBatch::try_new(schema, columns)
 }
 
-pub fn merge_batches(batch: &RecordBatch) -> Result<RecordBatch, ArrowError> {
-    let sorted = sorted_intervals(batch)?;
+pub fn merge_batches(batch: &RecordBatch, on_cols: &[usize]) -> Result<RecordBatch, ArrowError> {
+    let sorted = sorted_intervals_grouped(batch, on_cols)?;
     let mut merged: Vec<(String, i32, i32)> = Vec::new();
     for (chrom, start, end, _) in sorted {
         match merged.last_mut() {
@@ -68,8 +68,9 @@ pub fn merge_batches(batch: &RecordBatch) -> Result<RecordBatch, ArrowError> {
 pub fn complement_batches(
     batch: &RecordBatch,
     chrom_sizes: Option<&HashMap<String, i32>>,
+    on_cols: &[usize],
 ) -> Result<RecordBatch, ArrowError> {
-    let sorted = sorted_intervals(batch)?;
+    let sorted = sorted_intervals_grouped(batch, on_cols)?;
     let mut gaps: Vec<(String, i32, i32)> = Vec::new();
     let mut cur_chrom = String::new();
     let mut cur_end: i32 = 0;
@@ -99,23 +100,26 @@ pub fn complement_batches(
     chrom_start_end_batch(gaps)
 }
 
-pub fn coverage_batches(batch: &RecordBatch) -> Result<RecordBatch, ArrowError> {
+pub fn coverage_batches(batch: &RecordBatch, on_cols: &[usize]) -> Result<RecordBatch, ArrowError> {
     use arrow::array::{StringArray, UInt32Array as UA};
 
     let cols = resolve_interval_cols(batch.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
 
-    let mut chrom_events: HashMap<String, Vec<(i32, i32)>> = HashMap::new();
+    let mut chrom_events: HashMap<Vec<String>, Vec<(i32, i32)>> = HashMap::new();
     for row in 0..batch.num_rows() {
-        if let Some((chrom, start, end)) = get_interval(batch, &cols, row) {
-            let ev = chrom_events.entry(chrom.to_string()).or_default();
+        if let Some(key) = group_key(batch, &cols, on_cols, row)
+            && let Some((_, start, end)) = get_interval(batch, &cols, row)
+        {
+            let ev = chrom_events.entry(key).or_default();
             ev.push((start, 1));
             ev.push((end, -1));
         }
     }
 
     let mut result: Vec<(String, i32, i32, u32)> = Vec::new();
-    for (chrom, mut events) in chrom_events {
+    for (key, mut events) in chrom_events {
+        let chrom = key[0].clone();
         events.sort_unstable_by_key(|&(pos, _)| pos);
         let mut depth: i32 = 0;
         let mut pos = events[0].0;
@@ -453,33 +457,46 @@ pub fn tile_batches(batch: &RecordBatch, width: i32) -> Result<RecordBatch, Arro
     RecordBatch::try_new(batch.schema(), columns)
 }
 
-pub fn subtract_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBatch, ArrowError> {
+pub fn subtract_batches(
+    a: &RecordBatch,
+    b: &RecordBatch,
+    on_a: &[usize],
+    on_b: &[usize],
+) -> Result<RecordBatch, ArrowError> {
     let a_cols = resolve_interval_cols(a.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
     let b_cols = resolve_interval_cols(b.schema_ref())
         .map_err(|e| ArrowError::InvalidArgumentError(e.to_string()))?;
 
-    let mut b_groups: HashMap<String, Vec<Interval<u32>>> = HashMap::new();
+    let mut b_groups: HashMap<Vec<String>, Vec<Interval<u32>>> = HashMap::new();
     for row in 0..b.num_rows() {
-        if let Some((chrom, start, end)) = get_interval(b, &b_cols, row) {
+        if let Some(key) = group_key(b, &b_cols, on_b, row)
+            && let Some((_, start, end)) = get_interval(b, &b_cols, row)
+        {
             b_groups
-                .entry(chrom.to_string())
+                .entry(key)
                 .or_default()
                 .push(Interval::new(start, end - 1, row as u32));
         }
     }
-    let trees: HashMap<String, COITree<u32, u32>> = b_groups
+    let trees: HashMap<Vec<String>, COITree<u32, u32>> = b_groups
         .into_iter()
         .map(|(k, v)| (k, COITree::new(&v)))
         .collect();
 
     let keep: Vec<u32> = (0..a.num_rows() as u32)
-        .filter(|&row| match get_interval(a, &a_cols, row as usize) {
-            None => false,
-            Some((chrom, start, end)) => match trees.get(chrom) {
-                None => true,
-                Some(t) => t.query_count(start, end - 1) == 0,
-            },
+        .filter(|&row| {
+            let key = match group_key(a, &a_cols, on_a, row as usize) {
+                Some(k) => k,
+                None => return false,
+            };
+            match get_interval(a, &a_cols, row as usize) {
+                None => false,
+                Some((_, start, end)) => match trees.get(&key) {
+                    None => true,
+                    Some(t) => t.query_count(start, end - 1) == 0,
+                },
+            }
         })
         .collect();
 
@@ -491,8 +508,8 @@ pub fn subtract_batches(a: &RecordBatch, b: &RecordBatch) -> Result<RecordBatch,
     RecordBatch::try_new(a.schema(), columns?)
 }
 
-pub fn disjoin_batches(batch: &RecordBatch) -> Result<RecordBatch, ArrowError> {
-    let sorted = sorted_intervals(batch)?;
+pub fn disjoin_batches(batch: &RecordBatch, on_cols: &[usize]) -> Result<RecordBatch, ArrowError> {
+    let sorted = sorted_intervals_grouped(batch, on_cols)?;
     let mut result: Vec<(String, i32, i32)> = Vec::new();
 
     let mut i = 0;
