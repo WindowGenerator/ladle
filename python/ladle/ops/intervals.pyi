@@ -53,7 +53,11 @@ def overlap(
     """
     ...
 
-def nearest(query: ArrowLike, target: ArrowLike) -> pyarrow.RecordBatch:
+def nearest(
+    query: ArrowLike,
+    target: ArrowLike,
+    on_cols: list[str] | None = None,
+) -> pyarrow.RecordBatch:
     """
     For each row in `query`, find the nearest row in `target` on the same chromosome.
 
@@ -71,7 +75,11 @@ def nearest(query: ArrowLike, target: ArrowLike) -> pyarrow.RecordBatch:
     """
     ...
 
-def count_overlaps(a: ArrowLike, b: ArrowLike) -> pyarrow.RecordBatch:
+def count_overlaps(
+    a: ArrowLike,
+    b: ArrowLike,
+    on_cols: list[str] | None = None,
+) -> pyarrow.RecordBatch:
     """
     For each row in `a`, count how many rows in `b` it overlaps.
 
@@ -83,7 +91,7 @@ def count_overlaps(a: ArrowLike, b: ArrowLike) -> pyarrow.RecordBatch:
     """
     ...
 
-def cluster(a: ArrowLike) -> pyarrow.RecordBatch:
+def cluster(a: ArrowLike, on_cols: list[str] | None = None) -> pyarrow.RecordBatch:
     """
     Assign a cluster_id to each interval. Overlapping or adjacent intervals
     on the same chromosome share the same cluster_id (UInt32, 0-based).
@@ -92,7 +100,7 @@ def cluster(a: ArrowLike) -> pyarrow.RecordBatch:
     """
     ...
 
-def merge(a: ArrowLike) -> pyarrow.RecordBatch:
+def merge(a: ArrowLike, on_cols: list[str] | None = None) -> pyarrow.RecordBatch:
     """
     Merge overlapping intervals into non-overlapping spans.
 
@@ -101,7 +109,11 @@ def merge(a: ArrowLike) -> pyarrow.RecordBatch:
     """
     ...
 
-def subtract(a: ArrowLike, b: ArrowLike) -> pyarrow.RecordBatch:
+def subtract(
+    a: ArrowLike,
+    b: ArrowLike,
+    on_cols: list[str] | None = None,
+) -> pyarrow.RecordBatch:
     """
     Return rows of `a` that have no overlap with any row in `b`.
 
@@ -110,7 +122,11 @@ def subtract(a: ArrowLike, b: ArrowLike) -> pyarrow.RecordBatch:
     """
     ...
 
-def complement(a: ArrowLike, chrom_sizes: dict[str, int] | None = None) -> pyarrow.RecordBatch:
+def complement(
+    a: ArrowLike,
+    chrom_sizes: dict[str, int] | None = None,
+    on_cols: list[str] | None = None,
+) -> pyarrow.RecordBatch:
     """
     Return the gaps between intervals on each chromosome.
 
@@ -120,7 +136,7 @@ def complement(a: ArrowLike, chrom_sizes: dict[str, int] | None = None) -> pyarr
     """
     ...
 
-def coverage(a: ArrowLike) -> pyarrow.RecordBatch:
+def coverage(a: ArrowLike, on_cols: list[str] | None = None) -> pyarrow.RecordBatch:
     """
     Compute per-base coverage depth as contiguous blocks.
 
@@ -173,7 +189,11 @@ def flank(a: ArrowLike, width: int, start: bool = True) -> pyarrow.RecordBatch:
     """
     ...
 
-def set_width(a: ArrowLike, width: int, anchor: str = "start") -> pyarrow.RecordBatch:
+def set_width(
+    a: ArrowLike,
+    width: int,
+    anchor: Literal["start", "end", "center"] = "start",
+) -> pyarrow.RecordBatch:
     """
     Resize each interval to `width` bases.
 
@@ -194,7 +214,7 @@ def tile(a: ArrowLike, width: int) -> pyarrow.RecordBatch:
     """
     ...
 
-def disjoin(a: ArrowLike) -> pyarrow.RecordBatch:
+def disjoin(a: ArrowLike, on_cols: list[str] | None = None) -> pyarrow.RecordBatch:
     """
     Split overlapping intervals into non-overlapping disjoint pieces.
 
