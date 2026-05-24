@@ -55,6 +55,17 @@ VIRTUAL_ENV="$(pwd)/.venv" .venv/bin/maturin develop --manifest-path ladle-ops/C
 
 After any Rust change, re-run `maturin develop` for the affected crate before running tests.
 
+### Validation commands for agents
+
+After every code change, run both commands to validate correctness and style:
+
+```bash
+just test   # builds both crates, runs pytest + cargo test
+just lint   # ruff check on Python, cargo clippy on Rust (warnings → errors)
+```
+
+`just test` already rebuilds the Rust extensions before running tests, so there is no need to call `just build` separately. Fix all errors and warnings from both commands before reporting the work as done.
+
 ---
 
 ## Core design rules

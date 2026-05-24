@@ -1,5 +1,4 @@
 venv := ".venv"
-python := venv + "/bin/python"
 maturin := venv + "/bin/maturin"
 pytest := venv + "/bin/pytest"
 ruff := venv + "/bin/ruff"
