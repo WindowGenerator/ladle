@@ -66,6 +66,25 @@ just lint   # ruff check on Python, cargo clippy on Rust (warnings → errors)
 
 `just test` already rebuilds the Rust extensions before running tests, so there is no need to call `just build` separately. Fix all errors and warnings from both commands before reporting the work as done.
 
+### Keeping Python stubs in sync with Rust
+
+Every `#[pyfunction]` signature in `ladle-ops/src/intervals/ops.rs` and every `#[pymethods]` block in `ladle-io/src/` must have a matching entry in the corresponding `.pyi` stub under `python/ladle/`.
+
+After adding or changing a Rust binding, manually verify the stub matches on all of:
+
+| Rust | Python stub |
+|---|---|
+| parameter name | parameter name |
+| parameter type (`Option<Vec<String>>` → `list[str] \| None`) | parameter type |
+| default value (`#[pyo3(signature = (...))]`) | default value |
+| return type | return type |
+
+Use `Literal[...]` for string parameters whose valid values are checked at runtime (e.g. `how`, `anchor`). Use `list[str] \| None = None` for optional `Vec<String>` parameters.
+
+The stubs live at:
+- `python/ladle/io/<format>.pyi` — one file per I/O format
+- `python/ladle/ops/intervals.pyi` — all interval operations
+
 ---
 
 ## Core design rules
