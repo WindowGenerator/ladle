@@ -4,7 +4,9 @@ use pyo3::prelude::*;
 
 use super::record::PyRecord;
 use super::schema::{build_vcf_batch, build_vcf_batch_with_header};
-use crate::arrow_utils::{batch_to_pandas, batch_to_polars, batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
+use crate::arrow_utils::{
+    batch_to_pandas, batch_to_polars, batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch,
+};
 
 // ---------------------------------------------------------------------------
 // PyVcfRecordBatch

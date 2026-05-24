@@ -23,7 +23,6 @@ pub fn batch_to_pyarrow<'py>(py: Python<'py>, batch: RecordBatch) -> PyResult<Bo
     reader.call_method0("read_next_batch")
 }
 
-
 pub fn batch_to_polars<'py>(py: Python<'py>, batch: RecordBatch) -> PyResult<Bound<'py, PyAny>> {
     let arrow = batch_to_pyarrow(py, batch)?;
     py.import("polars")
