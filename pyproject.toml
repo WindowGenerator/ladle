@@ -21,6 +21,11 @@ dev     = [
     "pyarrow>=15.0",
     "polars>=1.0",
 ]
+docs    = [
+    "mkdocs-material>=9.0",
+    "mkdocstrings[python]>=0.25",
+    "pymdown-extensions>=10.0",
+]
 
 # Build both crates:
 #   VIRTUAL_ENV=.venv .venv/bin/maturin develop --manifest-path ladle-io/Cargo.toml

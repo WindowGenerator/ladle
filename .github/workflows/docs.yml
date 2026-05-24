@@ -1,0 +1,38 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Python dependencies
+        run: pip install maturin pyarrow polars
+
+      - name: Build ladle-io
+        run: VIRTUAL_ENV=$pythonLocation maturin develop --manifest-path ladle-io/Cargo.toml
+
+      - name: Build ladle-ops
+        run: VIRTUAL_ENV=$pythonLocation maturin develop --manifest-path ladle-ops/Cargo.toml
+
+      - name: Install docs dependencies
+        run: pip install mkdocs-material mkdocstrings[python] pymdown-extensions
+
+      - name: Deploy to GitHub Pages
+        run: mkdocs gh-deploy --force

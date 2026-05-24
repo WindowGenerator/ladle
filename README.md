@@ -32,7 +32,7 @@ ladle.io.core   # Position, Region, Interval
 ladle.ops.intervals  # overlap(a, b), nearest(query, target)
 ```
 
-Full API reference: [docs/api.md](docs/api.md)
+Full API reference: [windowgenerator.github.io/ladle](https://windowgenerator.github.io/ladle)
 
 ---
 

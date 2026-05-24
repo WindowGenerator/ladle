@@ -1,0 +1,59 @@
+site_name: ladle
+site_description: Python bindings to the noodles bioinformatics library
+site_url: https://windowgenerator.github.io/ladle
+repo_url: https://github.com/WindowGenerator/ladle
+repo_name: WindowGenerator/ladle
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [python]
+          options:
+            docstring_style: numpy
+            show_source: false
+            show_root_heading: true
+            show_symbol_type_heading: true
+            merge_init_into_class: true
+
+nav:
+  - Home: index.md
+  - API Reference:
+    - ladle.io.bam: api/bam.md
+    - ladle.io.sam: api/sam.md
+    - ladle.io.vcf: api/vcf.md
+    - ladle.io.bcf: api/bcf.md
+    - ladle.io.fastq: api/fastq.md
+    - ladle.io.bgzf: api/bgzf.md
+    - ladle.io.core: api/core.md
+    - ladle.ops.intervals: api/intervals.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: .
+  - tables

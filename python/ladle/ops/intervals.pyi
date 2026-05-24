@@ -24,31 +24,29 @@ def overlap(
 
     Both inputs must have columns named "chrom"/"contig"/"chr", "start"/"pos",
     and "end"/"stop". Rename columns before calling if needed:
-      - PyArrow:  batch.rename_columns({"seqname": "chrom", ...})
-      - Polars:   df.rename({"seqname": "chrom", ...})
-      - Pandas:   df.rename(columns={"seqname": "chrom", ...})
+
+    - PyArrow:  ``batch.rename_columns({"seqname": "chrom", ...})``
+    - Polars:   ``df.rename({"seqname": "chrom", ...})``
+    - Pandas:   ``df.rename(columns={"seqname": "chrom", ...})``
+
+    Condition: ``a.start < b.end and b.start < a.end`` (half-open intervals).
+    Cross-chromosome pairs are never overlapping. Parallel via Rayon.
 
     Parameters
     ----------
     how : "join" | "semi"
         "join" (default) — one row per overlapping pair; columns from both
         inputs prefixed "a_" and "b_" respectively (inner join semantics).
-        If `b` contains duplicate intervals that all overlap the same row in
-        `a`, each duplicate produces a separate output row. Use
-        `.unique()` / `.drop_duplicates()` on the result if needed.
+        If `b` contains duplicates that all overlap the same row in `a`,
+        each produces a separate output row.
 
         "semi" — rows from `a` that have at least one overlap in `b`,
-        preserving the schema and row count of `a` without duplication.
-        Equivalent to a filter: keeps `a` rows where any `b` row overlaps.
-
-    Overlap condition: a.start < b.end and b.start < a.end (half-open intervals).
-    Cross-chromosome pairs are never considered overlapping.
-    Uses all available CPU cores (Rayon parallel).
+        preserving the schema of `a` without duplication (filter semantics).
 
     Returns
     -------
     pyarrow.RecordBatch
-        "join": columns from `a` prefixed "a_", columns from `b" prefixed "b_".
+        "join": columns from `a` prefixed "a_", columns from `b` prefixed "b_".
         "semi": same schema as `a`.
     """
     ...

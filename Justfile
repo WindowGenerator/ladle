@@ -37,6 +37,14 @@ fmt:
     {{ruff}} format python/ tests/
     cargo fmt --all
 
+# Serve docs locally (hot-reload)
+docs-serve:
+    {{venv}}/bin/mkdocs serve
+
+# Build docs site into site/
+docs-build:
+    {{venv}}/bin/mkdocs build
+
 # Build wheel for distribution
 wheel:
     {{maturin}} build --release --manifest-path ladle-io/Cargo.toml
