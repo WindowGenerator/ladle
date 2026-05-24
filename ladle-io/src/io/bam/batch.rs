@@ -5,11 +5,11 @@ use arrow::array::{
 };
 use arrow::datatypes::{DataType, Field, Schema};
 use bstr::ByteSlice;
-use pyo3::exceptions::{PyIOError, PyImportError};
+use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
 use super::record::PyRecord;
-use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
+use crate::arrow_utils::{batch_to_pandas, batch_to_polars, batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
 
 fn bam_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
@@ -156,15 +156,11 @@ impl PyBamRecordBatch {
     }
 
     fn to_polars<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let arrow = self.to_arrow(py)?;
-        let pl = py.import("polars").map_err(|_| {
-            PyImportError::new_err("polars not installed — pip install ladle[polars]")
-        })?;
-        pl.getattr("from_arrow")?.call1((arrow,))
+        batch_to_polars(py, self.batch.clone())
     }
 
     fn to_pandas<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        self.to_arrow(py)?.call_method0("to_pandas")
+        batch_to_pandas(py, self.batch.clone())
     }
 
     fn to_iterator(&self) -> PyResult<PyBamBatchIterator> {

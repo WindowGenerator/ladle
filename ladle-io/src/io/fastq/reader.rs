@@ -6,6 +6,7 @@ use std::os::unix::io::{FromRawFd, RawFd};
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
+use super::batch::PyFastqRecordBatch;
 use super::record::PyRecord;
 
 type Inner = noodles::fastq::io::Reader<BufReader<File>>;
@@ -65,6 +66,25 @@ impl PyReader {
         } else {
             Ok(Some(PyRecord::from(record)))
         }
+    }
+
+    fn records_to_batch(&mut self, py: Python<'_>) -> PyResult<PyFastqRecordBatch> {
+        let reader = self.get()?;
+        let mut records: Vec<noodles::fastq::Record> = Vec::new();
+        py.detach(|| -> PyResult<()> {
+            loop {
+                let mut record = noodles::fastq::Record::default();
+                let n = reader
+                    .read_record(&mut record)
+                    .map_err(|e| PyIOError::new_err(e.to_string()))?;
+                if n == 0 {
+                    break;
+                }
+                records.push(record);
+            }
+            Ok(())
+        })?;
+        PyFastqRecordBatch::try_new(records).map_err(|e| PyIOError::new_err(e.to_string()))
     }
 
     fn close(&mut self) {

@@ -11,11 +11,11 @@ use noodles::vcf::variant::record::Info as _;
 use noodles::vcf::variant::record::ReferenceBases as _;
 use noodles::vcf::variant::record::Samples as VcfSamples;
 use noodles::vcf::variant::record::samples::Sample as VcfSample;
-use pyo3::exceptions::{PyIOError, PyImportError};
+use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
 use super::record::PyRecord;
-use crate::arrow_utils::{batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
+use crate::arrow_utils::{batch_to_pandas, batch_to_polars, batch_to_pyarrow, pandas_to_batch, pyarrow_to_batch};
 use crate::io::vcf::schema::{
     info_array_to_string, info_type_to_arrow, sample_value_to_string, vcf_base_schema,
 };
@@ -306,15 +306,11 @@ impl PyBcfRecordBatch {
     }
 
     fn to_polars<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        let arrow = self.to_arrow(py)?;
-        let pl = py.import("polars").map_err(|_| {
-            PyImportError::new_err("polars not installed — pip install ladle[polars]")
-        })?;
-        pl.getattr("from_arrow")?.call1((arrow,))
+        batch_to_polars(py, self.batch.clone())
     }
 
     fn to_pandas<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
-        self.to_arrow(py)?.call_method0("to_pandas")
+        batch_to_pandas(py, self.batch.clone())
     }
 
     fn to_iterator(&self) -> PyResult<PyBcfBatchIterator> {
