@@ -29,7 +29,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [python]
+          load_external_modules: true
           options:
             docstring_style: numpy
             show_source: false
@@ -39,6 +39,12 @@ plugins:
 
 nav:
   - Home: index.md
+  - Quick start: quickstart.md
+  - Tutorials:
+    - Overview: tutorials/index.md
+    - Alignment files (BAM/SAM): tutorials/bam.md
+    - Variant files (VCF/BCF): tutorials/vcf.md
+    - Interval operations: tutorials/intervals.md
   - API Reference:
     - ladle.io.bam: api/bam.md
     - ladle.io.sam: api/sam.md
