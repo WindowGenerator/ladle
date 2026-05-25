@@ -8,12 +8,37 @@ on:
     paths:
       - pyproject.toml
       - Cargo.toml
+      - ladle-io/Cargo.toml
+      - ladle-ops/Cargo.toml
       - .github/workflows/release.yml
 
 permissions:
   contents: read
 
 jobs:
+  sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          enable-cache: false
+
+      - name: Build ladle-io sdist
+        run: uvx maturin sdist -o dist --manifest-path ladle-io/Cargo.toml
+
+      - name: Build ladle-ops sdist
+        run: uvx maturin sdist -o dist --manifest-path ladle-ops/Cargo.toml
+
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist/*.tar.gz
+
   build:
     name: Build ${{ matrix.platform.name }} — Python ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.os }}
@@ -22,18 +47,36 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
         platform:
+          # Linux x86_64
           - name: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             target: x86_64
+            manylinux: auto
+          # Linux ARM64 (cross-compiled via QEMU)
+          - name: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            target: aarch64
+            manylinux: auto
+          # Windows x86_64
           - name: x86_64-pc-windows-msvc
             os: windows-latest
             target: x86_64
+            manylinux: ""
+          # Windows ARM64
+          - name: aarch64-pc-windows-msvc
+            os: windows-latest
+            target: aarch64
+            manylinux: ""
+          # macOS x86_64
           - name: x86_64-apple-darwin
-            os: macos-latest
+            os: macos-13
             target: x86_64
+            manylinux: ""
+          # macOS ARM64
           - name: aarch64-apple-darwin
             os: macos-latest
             target: aarch64
+            manylinux: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -55,20 +98,47 @@ jobs:
         shell: bash
         run: echo "PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1" >> $GITHUB_ENV
 
-      - name: Build ladle-io wheel (aarch64 macOS)
+      # ── Linux builds (native x86_64 + cross-compiled ARM64 via maturin-action) ──
+      - name: Build ladle-io wheel (Linux)
+        if: matrix.platform.os == 'ubuntu-latest'
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          manylinux: ${{ matrix.platform.manylinux }}
+          args: >-
+            --release
+            -o dist
+            --manifest-path ladle-io/Cargo.toml
+            -i python${{ matrix.python-version }}
+
+      - name: Build ladle-ops wheel (Linux)
+        if: matrix.platform.os == 'ubuntu-latest'
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          manylinux: ${{ matrix.platform.manylinux }}
+          args: >-
+            --release
+            -o dist
+            --manifest-path ladle-ops/Cargo.toml
+            -i python${{ matrix.python-version }}
+
+      # ── macOS ARM64 (cross-compiled on macos-latest runner) ──
+      - name: Build ladle-io wheel (macOS aarch64)
         if: matrix.platform.name == 'aarch64-apple-darwin'
         run: uvx maturin build --release -o dist --target aarch64-apple-darwin --manifest-path ladle-io/Cargo.toml
 
-      - name: Build ladle-ops wheel (aarch64 macOS)
+      - name: Build ladle-ops wheel (macOS aarch64)
         if: matrix.platform.name == 'aarch64-apple-darwin'
         run: uvx maturin build --release -o dist --target aarch64-apple-darwin --manifest-path ladle-ops/Cargo.toml
 
-      - name: Build ladle-io wheel
-        if: matrix.platform.name != 'aarch64-apple-darwin'
+      # ── All other native builds (macOS x86_64, Windows x86_64 & ARM64) ──
+      - name: Build ladle-io wheel (native)
+        if: matrix.platform.os != 'ubuntu-latest' && matrix.platform.name != 'aarch64-apple-darwin'
         run: uvx maturin build --release -o dist --manifest-path ladle-io/Cargo.toml
 
-      - name: Build ladle-ops wheel
-        if: matrix.platform.name != 'aarch64-apple-darwin'
+      - name: Build ladle-ops wheel (native)
+        if: matrix.platform.os != 'ubuntu-latest' && matrix.platform.name != 'aarch64-apple-darwin'
         run: uvx maturin build --release -o dist --manifest-path ladle-ops/Cargo.toml
 
       - name: Upload wheels
@@ -80,7 +150,7 @@ jobs:
   publish-pypi:
     name: Publish to PyPI
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [sdist, build]
     if: startsWith(github.ref, 'refs/tags/')
     environment:
       name: PyPI
@@ -89,6 +159,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download sdist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
 
       - name: Download wheel artifacts
         uses: actions/download-artifact@v4
@@ -105,13 +181,19 @@ jobs:
   publish-github-release:
     name: Publish GitHub Release
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [sdist, build]
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download sdist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
 
       - name: Download wheel artifacts
         uses: actions/download-artifact@v4
