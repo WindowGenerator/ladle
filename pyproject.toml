@@ -1,6 +1,6 @@
 [project]
 name = "ladle"
-version = "0.1.0"
+version = "0.0.1"
 description = "Python bindings to the noodles bioinformatics library"
 readme = "README.md"
 license = { text = "MIT" }

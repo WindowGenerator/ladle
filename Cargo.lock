@@ -507,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "ladle-arrow"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -516,7 +516,7 @@ dependencies = [
 
 [[package]]
 name = "ladle-io"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "arrow",
  "arrow-array",
@@ -529,7 +529,7 @@ dependencies = [
 
 [[package]]
 name = "ladle-ops"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "arrow",
  "arrow-array",

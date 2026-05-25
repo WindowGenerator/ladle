@@ -1,6 +1,6 @@
 [project]
 name = "ladle-io"
-version = "0.1.0"
+version = "0.0.1"
 description = "I/O bindings to the noodles bioinformatics library (BAM, VCF, BCF, SAM)"
 license = { text = "MIT" }
 requires-python = ">=3.11"
