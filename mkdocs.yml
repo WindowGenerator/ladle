@@ -1,6 +1,6 @@
 site_name: ladle
 site_description: Python bindings to the noodles bioinformatics library
-site_url: https://windowgenerator.github.io/ladle
+site_url: https://windowgenerator.org/ladle
 repo_url: https://github.com/WindowGenerator/ladle
 repo_name: WindowGenerator/ladle
 
