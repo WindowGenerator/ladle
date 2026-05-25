@@ -12,6 +12,14 @@ use super::record::PyRecord;
 
 type Inner = noodles::sam::io::Reader<BufReader<File>>;
 
+/// Sequential SAM reader.
+///
+/// Examples
+/// --------
+/// >>> with sam.Reader.from_path("reads.sam") as reader:
+/// ...     header = reader.read_header()
+/// ...     for record in reader:
+/// ...         print(record.name())
 #[pyclass(name = "Reader", module = "ladle.sam")]
 pub struct PyReader {
     inner: Option<Inner>,

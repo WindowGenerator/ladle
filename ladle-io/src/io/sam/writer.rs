@@ -10,6 +10,13 @@ use super::record::PyRecord;
 
 type Inner = Writer<BufWriter<File>>;
 
+/// SAM writer.
+///
+/// Examples
+/// --------
+/// >>> with sam.Writer.from_path("out.sam") as writer:
+/// ...     writer.write_header(header)
+/// ...     writer.write_record(header, record)
 #[pyclass(name = "Writer", module = "ladle.sam")]
 pub struct PyWriter {
     inner: Option<Inner>,

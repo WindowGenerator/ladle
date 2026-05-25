@@ -2,6 +2,13 @@ use noodles::sam::alignment::record::MappingQuality;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+/// Mapping quality score (MAPQ) in the range 0–254. Value 255 means unavailable.
+///
+/// Examples
+/// --------
+/// >>> mq = sam.MappingQuality(60)
+/// >>> mq.get()
+/// 60
 #[pyclass(name = "MappingQuality", module = "ladle.sam", frozen, from_py_object)]
 #[derive(Clone)]
 pub struct PyMappingQuality {

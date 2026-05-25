@@ -1,6 +1,18 @@
 use noodles::sam::alignment::record::Flags;
 use pyo3::prelude::*;
 
+/// SAM/BAM alignment flags bitset.
+///
+/// Class-level constants (e.g. ``Flags.UNMAPPED``) hold the individual bit values.
+/// Use bitwise operators (``&``, ``|``) to combine or test flags.
+///
+/// Examples
+/// --------
+/// >>> flags = sam.Flags(0x0003)
+/// >>> flags.is_segmented()
+/// True
+/// >>> bool(flags & sam.Flags(sam.Flags.UNMAPPED))
+/// False
 #[pyclass(name = "Flags", module = "ladle.sam", frozen, from_py_object)]
 #[derive(Clone)]
 pub struct PyFlags {

@@ -17,6 +17,16 @@ type InnerIndexedReader = noodles::bam::io::IndexedReader<noodles::bgzf::io::Rea
 // Reader (sequential, no index)
 // ---------------------------------------------------------------------------
 
+/// Sequential BAM reader.
+///
+/// Iterates over records in file order. Use [`IndexedReader`] for random access by region.
+///
+/// Examples
+/// --------
+/// >>> with bam.Reader.from_path("reads.bam") as reader:
+/// ...     header = reader.read_header()
+/// ...     for record in reader:
+/// ...         print(record.name())
 #[pyclass(name = "Reader", module = "ladle.bam")]
 pub struct PyReader {
     inner: Option<InnerReader>,
@@ -32,6 +42,7 @@ impl PyReader {
 
 #[pymethods]
 impl PyReader {
+    /// Open a BAM file at the given path.
     #[staticmethod]
     fn from_path(path: &str) -> PyResult<Self> {
         let file = File::open(path).map_err(|e| PyIOError::new_err(e.to_string()))?;
@@ -39,6 +50,7 @@ impl PyReader {
         Ok(Self { inner: Some(inner) })
     }
 
+    /// Open a BAM reader from an open file descriptor (Unix only).
     #[cfg(unix)]
     #[staticmethod]
     fn from_fd(obj: &Bound<'_, PyAny>) -> PyResult<Self> {
@@ -58,6 +70,7 @@ impl PyReader {
         Ok(Self { inner: Some(inner) })
     }
 
+    /// Parse and return the SAM/BAM header.
     fn read_header(&mut self) -> PyResult<PyHeader> {
         self.get()?
             .read_header()
@@ -99,6 +112,7 @@ impl PyReader {
         self.close();
     }
 
+    /// Read all remaining records into a [`RecordBatch`] (Arrow-compatible).
     fn records_to_batch(&mut self, py: Python<'_>) -> PyResult<PyBamRecordBatch> {
         let reader = self.get()?;
         let mut records: Vec<noodles::bam::Record> = Vec::new();
@@ -134,6 +148,15 @@ impl PyReader {
 // SAFETY: PyO3 holds the GIL on every #[pymethods] call, so PyIndexedReader is
 // accessed from at most one thread at a time.  BinningIndex does not implement
 // Send/Sync, but we never share the reader across threads.
+/// BAM reader with `.bai` index support for region-based queries.
+///
+/// Examples
+/// --------
+/// >>> with bam.IndexedReader.from_path("reads.bam") as reader:
+/// ...     header = reader.read_header()
+/// ...     region = core.Region(b"chr1", core.Interval(1, 1000))
+/// ...     for record in reader.query(header, region):
+/// ...         print(record.name())
 #[pyclass(name = "IndexedReader", module = "ladle.bam")]
 pub struct PyIndexedReader {
     inner: Option<InnerIndexedReader>,
@@ -152,6 +175,7 @@ impl PyIndexedReader {
 
 #[pymethods]
 impl PyIndexedReader {
+    /// Open an indexed BAM file. Expects a `.bai` index alongside the BAM file.
     #[staticmethod]
     fn from_path(path: &str) -> PyResult<Self> {
         let inner = noodles::bam::io::indexed_reader::Builder::default()
@@ -167,6 +191,7 @@ impl PyIndexedReader {
             .map_err(|e| PyIOError::new_err(e.to_string()))
     }
 
+    /// Query records overlapping the given genomic region.
     fn query(&mut self, header: &PyHeader, region: &PyRegion) -> PyResult<PyQuery> {
         let reader = self.get()?;
         let mut query = reader
@@ -219,6 +244,7 @@ impl PyIndexedReader {
 // Query (iterator over eagerly-collected region results)
 // ---------------------------------------------------------------------------
 
+/// Iterator over BAM records in a queried genomic region.
 #[pyclass(name = "Query", module = "ladle.bam")]
 pub struct PyQuery {
     records: Vec<noodles::bam::Record>,

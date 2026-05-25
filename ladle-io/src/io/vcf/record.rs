@@ -10,6 +10,7 @@ use pyo3::types::{PyDict, PyList, PyString};
 use super::header::PyHeader;
 use crate::io::core::PyPosition;
 
+/// A single VCF variant record.
 #[pyclass(name = "Record", module = "ladle.vcf", from_py_object)]
 #[derive(Clone)]
 pub struct PyRecord {

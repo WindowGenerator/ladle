@@ -10,6 +10,13 @@ use super::record::PyRecord;
 
 type Inner = noodles::vcf::io::Writer<BufWriter<File>>;
 
+/// VCF writer.
+///
+/// Examples
+/// --------
+/// >>> with vcf.Writer.from_path("out.vcf") as writer:
+/// ...     writer.write_header(header)
+/// ...     writer.write_record(header, record)
 #[pyclass(name = "Writer", module = "ladle.vcf")]
 pub struct PyWriter {
     inner: Option<Inner>,

@@ -10,6 +10,7 @@ use super::flags::PyFlags;
 use super::mapping_quality::PyMappingQuality;
 use crate::io::core::PyPosition;
 
+/// A single SAM alignment record.
 #[pyclass(name = "Record", module = "ladle.sam", from_py_object)]
 #[derive(Clone)]
 pub struct PyRecord {

@@ -9,6 +9,7 @@ use crate::io::core::PyPosition;
 use crate::io::sam::flags::PyFlags;
 use crate::io::sam::mapping_quality::PyMappingQuality;
 
+/// A single BAM alignment record.
 #[pyclass(name = "Record", module = "ladle.bam", from_py_object)]
 #[derive(Clone)]
 pub struct PyRecord {
@@ -23,14 +24,17 @@ impl From<noodles::bam::Record> for PyRecord {
 
 #[pymethods]
 impl PyRecord {
+    /// Read name (QNAME), or ``None`` if absent.
     fn name<'py>(&self, py: Python<'py>) -> Option<pyo3::Bound<'py, PyBytes>> {
         self.inner.name().map(|n| PyBytes::new(py, n.as_bytes()))
     }
 
+    /// SAM flags as a [`Flags`] bitset.
     fn flags(&self) -> PyResult<PyFlags> {
         Ok(PyFlags::from(self.inner.flags()))
     }
 
+    /// 0-based index into the header reference sequence dictionary, or ``None`` if unmapped.
     fn reference_sequence_id(&self) -> PyResult<Option<usize>> {
         match self.inner.reference_sequence_id() {
             None => Ok(None),
@@ -39,6 +43,7 @@ impl PyRecord {
         }
     }
 
+    /// 1-based alignment start position, or ``None`` if unmapped.
     fn alignment_start(&self) -> PyResult<Option<PyPosition>> {
         match self.inner.alignment_start() {
             None => Ok(None),
@@ -47,14 +52,17 @@ impl PyRecord {
         }
     }
 
+    /// Mapping quality (MAPQ), or ``None`` if unavailable (value 255).
     fn mapping_quality(&self) -> PyResult<Option<PyMappingQuality>> {
         Ok(self.inner.mapping_quality().map(PyMappingQuality::from))
     }
 
+    /// Raw CIGAR bytes.
     fn cigar<'py>(&self, py: Python<'py>) -> pyo3::Bound<'py, PyBytes> {
         PyBytes::new(py, self.inner.cigar().as_ref())
     }
 
+    /// Reference sequence index of the mate, or ``None``.
     fn mate_reference_sequence_id(&self) -> PyResult<Option<usize>> {
         match self.inner.mate_reference_sequence_id() {
             None => Ok(None),
@@ -63,6 +71,7 @@ impl PyRecord {
         }
     }
 
+    /// 1-based alignment start of the mate, or ``None``.
     fn mate_alignment_start(&self) -> PyResult<Option<PyPosition>> {
         match self.inner.mate_alignment_start() {
             None => Ok(None),
@@ -71,18 +80,22 @@ impl PyRecord {
         }
     }
 
+    /// Observed template length (TLEN). Negative for reverse-strand mates.
     fn template_length(&self) -> i32 {
         self.inner.template_length()
     }
 
+    /// Nucleotide sequence (SEQ) as bytes.
     fn sequence<'py>(&self, py: Python<'py>) -> pyo3::Bound<'py, PyBytes> {
         PyBytes::new(py, self.inner.sequence().as_ref())
     }
 
+    /// Base quality scores (QUAL) as raw Phred bytes.
     fn quality_scores<'py>(&self, py: Python<'py>) -> pyo3::Bound<'py, PyBytes> {
         PyBytes::new(py, self.inner.quality_scores().as_ref())
     }
 
+    /// Optional auxiliary fields (TAG:TYPE:VALUE) as a ``{bytes: value}`` dict.
     fn data<'py>(&self, py: Python<'py>) -> PyResult<pyo3::Bound<'py, PyDict>> {
         let dict = PyDict::new(py);
         for result in self.inner.data().iter() {

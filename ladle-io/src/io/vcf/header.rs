@@ -5,6 +5,7 @@ use pyo3::exceptions::{PyIOError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyString, PyTuple};
 
+/// VCF header containing sample names, contig lengths, INFO/FORMAT field definitions.
 #[pyclass(name = "Header", module = "ladle.vcf", from_py_object)]
 #[derive(Clone)]
 pub struct PyHeader {
@@ -33,6 +34,7 @@ impl PyHeader {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// Return sample names in column order.
     fn sample_names<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
         let names: Vec<Bound<'_, PyString>> = self
             .inner
@@ -43,6 +45,7 @@ impl PyHeader {
         PyList::new(py, names)
     }
 
+    /// Return contig metadata as ``{name: length_or_None}`` dict.
     fn contigs<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
         let dict = PyDict::new(py);
         for (name, map) in self.inner.contigs() {
@@ -62,6 +65,7 @@ impl PyHeader {
         String::from_utf8(buf).map_err(|e| PyIOError::new_err(e.to_string()))
     }
 
+    /// Return INFO field definitions as ``[(key, type_str)]`` list.
     fn info_fields<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
         let items: Vec<Bound<'_, PyTuple>> = self
             .inner
@@ -81,6 +85,7 @@ impl PyHeader {
         PyList::new(py, items)
     }
 
+    /// Return FORMAT field definitions as ``[(key, type_str)]`` list.
     fn format_fields<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyList>> {
         let items: Vec<Bound<'_, PyTuple>> = self
             .inner

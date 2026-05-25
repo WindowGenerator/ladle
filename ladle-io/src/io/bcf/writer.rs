@@ -10,6 +10,13 @@ use crate::io::vcf::record::PyRecord as VcfPyRecord;
 
 type Inner = noodles::bcf::io::Writer<noodles::bgzf::io::Writer<File>>;
 
+/// BCF writer (BGZF-compressed binary VCF).
+///
+/// Examples
+/// --------
+/// >>> with bcf.Writer.from_path("out.bcf") as writer:
+/// ...     writer.write_header(header)
+/// ...     writer.write_record(header, record)
 #[pyclass(name = "Writer", module = "ladle.bcf")]
 pub struct PyWriter {
     inner: Option<Inner>,
@@ -45,6 +52,7 @@ impl PyWriter {
             .map_err(|e| PyIOError::new_err(e.to_string()))
     }
 
+    /// Write a VCF record into this BCF file (cross-format conversion).
     fn write_vcf_record(&mut self, header: &PyHeader, record: &VcfPyRecord) -> PyResult<()> {
         self.get()?
             .write_variant_record(&header.inner, &record.inner)

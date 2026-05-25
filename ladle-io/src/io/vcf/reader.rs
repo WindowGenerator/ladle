@@ -12,6 +12,14 @@ use super::record::PyRecord;
 
 type Inner = noodles::vcf::io::Reader<BufReader<File>>;
 
+/// Sequential VCF reader.
+///
+/// Examples
+/// --------
+/// >>> with vcf.Reader.from_path("variants.vcf") as reader:
+/// ...     header = reader.read_header()
+/// ...     for record in reader:
+/// ...         print(record.reference_sequence_name())
 #[pyclass(name = "Reader", module = "ladle.vcf")]
 pub struct PyReader {
     inner: Option<Inner>,

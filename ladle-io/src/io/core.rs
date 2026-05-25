@@ -11,6 +11,13 @@ use pyo3::types::PyBytes;
 // Position
 // ---------------------------------------------------------------------------
 
+/// 1-based genomic position (minimum value is 1).
+///
+/// Examples
+/// --------
+/// >>> pos = core.Position(100)
+/// >>> pos.get()
+/// 100
 #[pyclass(name = "Position", module = "ladle.core", frozen, from_py_object)]
 #[derive(Clone)]
 pub struct PyPosition {
@@ -25,6 +32,7 @@ impl From<Position> for PyPosition {
 
 #[pymethods]
 impl PyPosition {
+    /// Create a position from a 1-based integer. Raises ``ValueError`` if ``n < 1``.
     #[new]
     fn new(n: usize) -> PyResult<Self> {
         Position::new(n)
@@ -48,14 +56,17 @@ impl PyPosition {
         }
     }
 
+    /// Return the 1-based integer value.
     fn get(&self) -> usize {
         self.inner.get()
     }
 
+    /// Add ``n`` to the position, returning ``None`` on overflow.
     fn checked_add(&self, n: usize) -> Option<Self> {
         self.inner.checked_add(n).map(|p| Self { inner: p })
     }
 
+    /// Parse a position from its string representation.
     #[staticmethod]
     fn parse(s: &str) -> PyResult<Self> {
         s.parse::<Position>()
@@ -104,6 +115,15 @@ impl PyPosition {
 // Interval
 // ---------------------------------------------------------------------------
 
+/// A 1-based, closed genomic interval ``[start, end]``.
+///
+/// Both ``start`` and ``end`` are optional (``None`` means unbounded).
+///
+/// Examples
+/// --------
+/// >>> iv = core.Interval(1, 1000)  # chr:1-1000
+/// >>> iv.contains(core.Position(500))
+/// True
 #[pyclass(name = "Interval", module = "ladle.core", frozen, from_py_object)]
 #[derive(Clone)]
 pub struct PyInterval {
@@ -141,22 +161,27 @@ impl PyInterval {
         Ok(Self { inner: interval })
     }
 
+    /// Inclusive start position, or ``None`` if unbounded.
     fn start(&self) -> Option<PyPosition> {
         self.inner.start().map(PyPosition::from)
     }
 
+    /// Inclusive end position, or ``None`` if unbounded.
     fn end(&self) -> Option<PyPosition> {
         self.inner.end().map(PyPosition::from)
     }
 
+    /// Return ``True`` if *pos* falls within this interval.
     fn contains(&self, pos: &PyPosition) -> bool {
         self.inner.contains(pos.inner)
     }
 
+    /// Return ``True`` if this interval overlaps *other*.
     fn intersects(&self, other: &PyInterval) -> bool {
         self.inner.intersects(other.inner)
     }
 
+    /// Parse an interval from its string representation (e.g. ``"1-1000"``).
     #[staticmethod]
     fn parse(s: &str) -> PyResult<Self> {
         s.parse::<Interval>()
@@ -198,6 +223,13 @@ impl PyInterval {
 // Region
 // ---------------------------------------------------------------------------
 
+/// A named genomic region: a reference sequence name plus an [`Interval`].
+///
+/// Examples
+/// --------
+/// >>> region = core.Region(b"chr1", core.Interval(1, 1_000_000))
+/// >>> str(region)
+/// 'chr1:1-1000000'
 #[pyclass(name = "Region", module = "ladle.core", frozen, from_py_object)]
 #[derive(Clone)]
 pub struct PyRegion {

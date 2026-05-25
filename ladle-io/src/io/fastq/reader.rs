@@ -11,6 +11,13 @@ use super::record::PyRecord;
 
 type Inner = noodles::fastq::io::Reader<BufReader<File>>;
 
+/// Sequential FASTQ reader.
+///
+/// Examples
+/// --------
+/// >>> with fastq.Reader.from_path("reads.fastq") as reader:
+/// ...     for record in reader:
+/// ...         print(record.name(), record.sequence())
 #[pyclass(name = "Reader", module = "ladle.fastq")]
 pub struct PyReader {
     inner: Option<Inner>,

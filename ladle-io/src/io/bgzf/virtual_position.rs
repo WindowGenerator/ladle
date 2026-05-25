@@ -2,6 +2,14 @@ use noodles::bgzf::VirtualPosition;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+/// A BGZF virtual position encoding both block offset and within-block offset.
+///
+/// Virtual positions are used with [`Reader.seek`] for random access within a BGZF file.
+///
+/// Examples
+/// --------
+/// >>> vpos = bgzf.VirtualPosition(block_offset, within_offset)
+/// >>> reader.seek(vpos)
 #[pyclass(
     name = "VirtualPosition",
     module = "ladle.bgzf",

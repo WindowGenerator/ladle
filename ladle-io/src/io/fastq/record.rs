@@ -1,6 +1,7 @@
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
 
+/// A single FASTQ record with name, sequence, and quality scores.
 #[pyclass(name = "Record", module = "ladle.fastq", from_py_object)]
 #[derive(Clone)]
 pub struct PyRecord {

@@ -1,6 +1,7 @@
 use pyo3::exceptions::PyIOError;
 use pyo3::prelude::*;
 
+/// BAI (BAM index) loaded from a ``.bai`` file.
 #[pyclass(name = "Index", module = "ladle.bam.bai")]
 pub struct PyBaiIndex {
     pub inner: noodles::bam::bai::Index,
@@ -8,6 +9,7 @@ pub struct PyBaiIndex {
 
 #[pymethods]
 impl PyBaiIndex {
+    /// Read a ``.bai`` index file from the given path.
     #[staticmethod]
     fn read_from_path(path: &str) -> PyResult<Self> {
         noodles::bam::bai::fs::read(path)

@@ -12,6 +12,7 @@ use pyo3::types::{PyBytes, PyDict, PyList, PyString};
 use crate::io::core::PyPosition;
 use crate::io::vcf::header::PyHeader;
 
+/// A single BCF variant record.
 #[pyclass(name = "Record", module = "ladle.bcf", from_py_object)]
 #[derive(Clone)]
 pub struct PyRecord {

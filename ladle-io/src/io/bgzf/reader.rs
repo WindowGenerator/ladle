@@ -11,6 +11,12 @@ use super::virtual_position::PyVirtualPosition;
 
 type Inner = bgzf::io::Reader<BufReader<File>>;
 
+/// BGZF (block gzip) reader with random-access support via virtual positions.
+///
+/// Examples
+/// --------
+/// >>> with bgzf.Reader.from_path("data.bgz") as reader:
+/// ...     data = reader.read_all()
 #[pyclass(name = "Reader", module = "ladle.bgzf")]
 pub struct PyReader {
     inner: Option<Inner>,
@@ -33,6 +39,7 @@ impl PyReader {
         Ok(Self { inner: Some(inner) })
     }
 
+    /// Read up to *size* decompressed bytes.
     fn read<'py>(&mut self, py: Python<'py>, size: usize) -> PyResult<Bound<'py, PyBytes>> {
         let reader = self.get()?;
         let mut buf = vec![0u8; size];
@@ -43,6 +50,7 @@ impl PyReader {
         Ok(PyBytes::new(py, &buf))
     }
 
+    /// Read all remaining decompressed bytes.
     fn read_all<'py>(&mut self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
         let reader = self.get()?;
         let mut buf = Vec::new();
@@ -51,6 +59,7 @@ impl PyReader {
         Ok(PyBytes::new(py, &buf))
     }
 
+    /// Read one decompressed line (including the trailing ``\n``).
     fn read_line<'py>(&mut self, py: Python<'py>) -> PyResult<Bound<'py, PyBytes>> {
         let reader = self.get()?;
         let mut buf = Vec::new();
@@ -67,6 +76,7 @@ impl PyReader {
         Ok(PyVirtualPosition::from(self.get()?.virtual_position()))
     }
 
+    /// Seek to a virtual position (as returned by ``virtual_position()``).
     fn seek(&mut self, vpos: &PyVirtualPosition) -> PyResult<PyVirtualPosition> {
         let result = self
             .get()?

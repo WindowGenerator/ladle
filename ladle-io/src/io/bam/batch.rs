@@ -107,6 +107,18 @@ fn build_bam_batch(
 // PyBamRecordBatch
 // ---------------------------------------------------------------------------
 
+/// A batch of BAM records in columnar Arrow format.
+///
+/// Columns: ``name``, ``flags``, ``reference_sequence_id``, ``alignment_start``,
+/// ``mapping_quality``, ``cigar``, ``mate_reference_sequence_id``,
+/// ``mate_alignment_start``, ``template_length``, ``sequence``, ``quality_scores``.
+///
+/// Examples
+/// --------
+/// >>> with bam.Reader.from_path("reads.bam") as reader:
+/// ...     reader.read_header()
+/// ...     batch = reader.records_to_batch()
+/// ... df = batch.to_polars()
 #[pyclass(name = "RecordBatch", module = "ladle.bam")]
 pub struct PyBamRecordBatch {
     records: Option<Vec<noodles::bam::Record>>,
@@ -125,7 +137,7 @@ impl PyBamRecordBatch {
 
 #[pymethods]
 impl PyBamRecordBatch {
-    // Accepts pyarrow.RecordBatch, pyarrow.Table, or any object with __arrow_c_stream__.
+    /// Create from a PyArrow ``RecordBatch``, ``Table``, or any object with ``__arrow_c_stream__``.
     #[staticmethod]
     fn from_arrow(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
         let batch = pyarrow_to_batch(py, obj)?;
@@ -135,7 +147,7 @@ impl PyBamRecordBatch {
         })
     }
 
-    // polars.DataFrame also supports __arrow_c_stream__, so pass directly.
+    /// Create from a Polars ``DataFrame``.
     #[staticmethod]
     fn from_polars(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
         let batch = pyarrow_to_batch(py, obj)?;
@@ -145,6 +157,7 @@ impl PyBamRecordBatch {
         })
     }
 
+    /// Create from a Pandas ``DataFrame``.
     #[staticmethod]
     fn from_pandas(py: Python<'_>, obj: &Bound<'_, PyAny>) -> PyResult<Self> {
         Ok(Self {
@@ -153,18 +166,25 @@ impl PyBamRecordBatch {
         })
     }
 
+    /// Export as a PyArrow ``RecordBatch``.
     fn to_arrow<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         batch_to_pyarrow(py, self.batch.clone())
     }
 
+    /// Export as a Polars ``DataFrame``.
     fn to_polars<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         batch_to_polars(py, self.batch.clone())
     }
 
+    /// Export as a Pandas ``DataFrame``.
     fn to_pandas<'py>(&self, py: Python<'py>) -> PyResult<Bound<'py, PyAny>> {
         batch_to_pandas(py, self.batch.clone())
     }
 
+    /// Return an iterator that yields individual [`Record`] objects.
+    ///
+    /// Only available when the batch was created by ``Reader.records_to_batch()``,
+    /// not from ``from_arrow`` / ``from_polars`` / ``from_pandas``.
     fn to_iterator(&self) -> PyResult<PyBamBatchIterator> {
         match &self.records {
             Some(recs) => Ok(PyBamBatchIterator {
@@ -193,6 +213,7 @@ impl PyBamRecordBatch {
 // PyBamBatchIterator
 // ---------------------------------------------------------------------------
 
+/// Iterator that yields individual BAM [`Record`] objects from a [`RecordBatch`].
 #[pyclass(name = "RecordBatchIterator", module = "ladle.bam")]
 pub struct PyBamBatchIterator {
     records: Vec<noodles::bam::Record>,

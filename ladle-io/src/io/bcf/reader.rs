@@ -17,6 +17,14 @@ type InnerIndexedReader = noodles::bcf::io::IndexedReader<noodles::bgzf::io::Rea
 // Reader (sequential)
 // ---------------------------------------------------------------------------
 
+/// Sequential BCF reader.
+///
+/// Examples
+/// --------
+/// >>> with bcf.Reader.from_path("variants.bcf") as reader:
+/// ...     header = reader.read_header()
+/// ...     for record in reader:
+/// ...         print(record.variant_start())
 #[pyclass(name = "Reader", module = "ladle.bcf")]
 pub struct PyReader {
     inner: Option<Inner>,
@@ -137,6 +145,7 @@ impl PyReader {
 
 // SAFETY: BinningIndex is not Send, but PyO3 holds the GIL on every method call,
 // so PyIndexedReader is accessed from at most one thread at a time.
+/// BCF reader with CSI index support for region-based queries.
 #[pyclass(name = "IndexedReader", module = "ladle.bcf")]
 pub struct PyIndexedReader {
     inner: Option<InnerIndexedReader>,
@@ -221,6 +230,7 @@ impl PyIndexedReader {
 // Query (eagerly collected region results)
 // ---------------------------------------------------------------------------
 
+/// Iterator over BCF records in a queried genomic region.
 #[pyclass(name = "Query", module = "ladle.bcf")]
 pub struct PyQuery {
     records: Vec<noodles::bcf::Record>,

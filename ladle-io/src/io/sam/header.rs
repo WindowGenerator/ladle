@@ -5,6 +5,13 @@ use pyo3::exceptions::{PyIOError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::{PyBytes, PyDict};
 
+/// SAM/BAM header containing reference sequences and other metadata.
+///
+/// Examples
+/// --------
+/// >>> with sam.Reader.from_path("reads.sam") as reader:
+/// ...     header = reader.read_header()
+/// ...     print(header.reference_sequences())
 #[pyclass(name = "Header", module = "ladle.sam", from_py_object)]
 #[derive(Clone)]
 pub struct PyHeader {
@@ -33,6 +40,7 @@ impl PyHeader {
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
+    /// Return reference sequences as ``{name_bytes: length}`` dict.
     fn reference_sequences<'py>(&self, py: Python<'py>) -> PyResult<pyo3::Bound<'py, PyDict>> {
         let dict = PyDict::new(py);
         for (name, map) in self.inner.reference_sequences() {
